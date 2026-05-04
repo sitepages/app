@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import * as pdfParseModule from 'pdf-parse'
-const pdfParse = (pdfParseModule as any).default ?? pdfParseModule
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require('pdf-parse')
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData()

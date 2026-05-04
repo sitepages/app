@@ -419,7 +419,7 @@ export default function AnalyticsPage() {
                 <YAxis tickFormatter={fmtK} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={60} />
                 <Tooltip
                   contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12 }}
-                  formatter={(v: any, name: string) => [fmt(v), name === 'cumBalance' ? 'Saldo acumulado' : name === 'balance' ? 'Saldo do mês' : name]}
+                  formatter={(v: any, name: any) => [fmt(v), name === 'cumBalance' ? 'Saldo acumulado' : name === 'balance' ? 'Saldo do mês' : name]}
                   labelStyle={{ color: 'var(--text)', fontWeight: 600 }}
                 />
                 <Legend

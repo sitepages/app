@@ -466,7 +466,12 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
     setDetected(false)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 }, height: { ideal: 720 },
+          // continuous autofocus where supported
+          advanced: [{ focusMode: 'continuous' } as any],
+        }
       })
       streamRef.current = stream
       if (videoRef.current) {
@@ -487,18 +492,24 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
   useEffect(() => {
     if (!scanning) return
     let active = true
+    const SCAN_W = 480  // scale down for jsQR — enough resolution, much less CPU
+
     const scan = () => {
       if (!active) return
       const video = videoRef.current
       const canvas = canvasRef.current
-      if (!video || !canvas || video.readyState < 2) { rafRef.current = requestAnimationFrame(scan); return }
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      const ctx = canvas.getContext('2d')
+      if (!video || !canvas || video.readyState < 3) {
+        rafRef.current = requestAnimationFrame(scan)
+        return
+      }
+      const scale = SCAN_W / video.videoWidth
+      canvas.width  = SCAN_W
+      canvas.height = Math.round(video.videoHeight * scale)
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
       if (!ctx) { rafRef.current = requestAnimationFrame(scan); return }
-      ctx.drawImage(video, 0, 0)
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      const code = jsQR(imageData.data, imageData.width, imageData.height)
+      const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
       if (code?.data) {
         const raw = code.data
         if (raw.toLowerCase().includes('fazenda') || raw.toLowerCase().includes('sefaz') || raw.toLowerCase().includes('nfce')) {
@@ -507,10 +518,15 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
           processUrl(raw); return
         }
       }
-      rafRef.current = requestAnimationFrame(scan)
+      // throttle to ~5fps — enough for QR scanning, keeps camera focused
+      rafRef.current = setTimeout(scan, 200) as unknown as number
     }
     rafRef.current = requestAnimationFrame(scan)
-    return () => { active = false; cancelAnimationFrame(rafRef.current) }
+    return () => {
+      active = false
+      clearTimeout(rafRef.current)
+      cancelAnimationFrame(rafRef.current)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scanning])
 

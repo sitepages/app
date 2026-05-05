@@ -492,7 +492,6 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
   useEffect(() => {
     if (!scanning) return
     let active = true
-    const SCAN_W = 480  // scale down for jsQR — enough resolution, much less CPU
 
     const scan = () => {
       if (!active) return
@@ -502,12 +501,11 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
         rafRef.current = requestAnimationFrame(scan)
         return
       }
-      const scale = SCAN_W / video.videoWidth
-      canvas.width  = SCAN_W
-      canvas.height = Math.round(video.videoHeight * scale)
+      canvas.width  = video.videoWidth
+      canvas.height = video.videoHeight
       const ctx = canvas.getContext('2d', { willReadFrequently: true })
       if (!ctx) { rafRef.current = requestAnimationFrame(scan); return }
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      ctx.drawImage(video, 0, 0)
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
       if (code?.data) {

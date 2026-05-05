@@ -478,6 +478,17 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
         videoRef.current.srcObject = stream
         await videoRef.current.play()
       }
+      // apply 2x digital zoom where supported (Android Chrome) so user
+      // can stay at comfortable focus distance from the receipt
+      try {
+        const track = stream.getVideoTracks()[0]
+        const caps = (track as any).getCapabilities?.()
+        if (caps?.zoom) {
+          await (track as any).applyConstraints({
+            advanced: [{ zoom: Math.min(2, caps.zoom.max) }],
+          })
+        }
+      } catch (_) {}
       setScanning(true)
     } catch (err: any) {
       const msg = err?.name === 'NotAllowedError'
@@ -501,11 +512,17 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
         rafRef.current = requestAnimationFrame(scan)
         return
       }
-      canvas.width  = video.videoWidth
-      canvas.height = video.videoHeight
+      // crop center 65% of frame — user centers QR on viewfinder,
+      // this doubles effective pixel density without needing to get closer
+      const cropW = Math.round(video.videoWidth  * 0.65)
+      const cropH = Math.round(video.videoHeight * 0.65)
+      const cropX = Math.round((video.videoWidth  - cropW) / 2)
+      const cropY = Math.round((video.videoHeight - cropH) / 2)
+      canvas.width  = cropW
+      canvas.height = cropH
       const ctx = canvas.getContext('2d', { willReadFrequently: true })
       if (!ctx) { rafRef.current = requestAnimationFrame(scan); return }
-      ctx.drawImage(video, 0, 0)
+      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' })
       if (code?.data) {
@@ -632,7 +649,7 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
               )}
               {scanning && !detected && (
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', padding: '24px 16px 12px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>Aponte para o QR code do cupom fiscal</p>
+                  <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>Aponte para o QR code · mantenha ~20cm de distância</p>
                 </div>
               )}
             </div>

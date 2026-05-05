@@ -139,19 +139,31 @@ export function parseItauPDF(pdfText: string): ItauStatement {
   for (const line of pdfText.split('\n')) {
     const trimmed = line.trim()
 
-    const dateMatch = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)$/)
+    const dateMatch = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})\s*(.+)$/)
     if (!dateMatch) continue
 
     const [, day, month, year, rest] = dateMatch
     const date = toISODate(day, month, year)
 
+    // Lines with a date suffix (e.g. "PIX TRANSF Gabriel28/01") have the value
+    // immediately concatenated after the DD/MM suffix with no separator.
+    // Match desc+suffix together so "28/01" + "1.000,00" doesn't merge into "11.000,00".
+    const dateSuffixMatch = rest.match(/^(.+\d{2}\/\d{2})(-?\d{1,3}(?:\.\d{3})*,\d{2})(?:-?\d{1,3}(?:\.\d{3})*,\d{2})?$/)
+    if (dateSuffixMatch) {
+      const rawDesc = dateSuffixMatch[1].trim()
+      const amount  = parseAmount(dateSuffixMatch[2])
+      if (!rawDesc) continue
+      entries.push({ date, rawDescription: rawDesc, amount, ...classifyEntry(rawDesc, amount) })
+      continue
+    }
+
     const amounts = [...rest.matchAll(AMOUNT_RE)]
     if (amounts.length === 0) continue
 
-    // Use the last amount on the line
-    const lastMatch = amounts[amounts.length - 1]
-    const amount    = parseAmount(lastMatch[0])
-    const rawDesc   = rest.substring(0, lastMatch.index).trim()
+    // Use the first amount (transaction value); subsequent amounts are the running balance
+    const firstMatch = amounts[0]
+    const amount     = parseAmount(firstMatch[0])
+    const rawDesc    = rest.substring(0, firstMatch.index).trim()
 
     if (!rawDesc) continue
 

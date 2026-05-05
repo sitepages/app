@@ -4,6 +4,7 @@ import { useGrocery, SUBCATEGORIES } from '@/hooks/useGrocery'
 import { useShoppingList } from '@/hooks/useShoppingList'
 import { createClient } from '@/services/supabase/client'
 import { ShoppingCart, Plus, X, Trash2, ChevronDown, ChevronUp, QrCode, Loader2, Check, Camera, Link, Receipt } from 'lucide-react'
+import jsQR from 'jsqr'
 import { ShoppingListEmpty } from '@/components/grocery/ShoppingListEmpty'
 import { ShoppingListHeader } from '@/components/grocery/ShoppingListHeader'
 import { ShoppingListItemRow } from '@/components/grocery/ShoppingListItemRow'
@@ -450,8 +451,6 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
   const rafRef      = useRef<number>(0)
   const canvasRef   = useRef<HTMLCanvasElement>(null)
 
-  const hasBarcodeDetector = typeof window !== 'undefined' && 'BarcodeDetector' in window
-
   const stopCamera = useCallback(() => {
     cancelAnimationFrame(rafRef.current)
     if (streamRef.current) {
@@ -486,35 +485,38 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
   }, [])
 
   useEffect(() => {
-    if (!scanning || !hasBarcodeDetector || !videoRef.current) return
-    const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] })
-    const scan = async () => {
+    if (!scanning) return
+    let active = true
+    const scan = () => {
+      if (!active) return
       const video = videoRef.current
-      if (!video || video.readyState < 2) { rafRef.current = requestAnimationFrame(scan); return }
-      try {
-        const barcodes = await detector.detect(video)
-        if (barcodes.length > 0) {
-          const raw = barcodes[0].rawValue as string
-          if (raw.includes('fazenda') || raw.includes('sefaz') || raw.includes('nfce')) {
-            setDetected(true); stopCamera(); setUrl(raw)
-            await processUrl(raw); return
-          }
+      const canvas = canvasRef.current
+      if (!video || !canvas || video.readyState < 2) { rafRef.current = requestAnimationFrame(scan); return }
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { rafRef.current = requestAnimationFrame(scan); return }
+      ctx.drawImage(video, 0, 0)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      const code = jsQR(imageData.data, imageData.width, imageData.height)
+      if (code?.data) {
+        const raw = code.data
+        if (raw.toLowerCase().includes('fazenda') || raw.toLowerCase().includes('sefaz') || raw.toLowerCase().includes('nfce')) {
+          active = false
+          setDetected(true); stopCamera(); setUrl(raw)
+          processUrl(raw); return
         }
-      } catch (_) {}
+      }
       rafRef.current = requestAnimationFrame(scan)
     }
     rafRef.current = requestAnimationFrame(scan)
-    return () => cancelAnimationFrame(rafRef.current)
+    return () => { active = false; cancelAnimationFrame(rafRef.current) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scanning, hasBarcodeDetector])
+  }, [scanning])
 
   useEffect(() => { return () => stopCamera() }, [stopCamera])
 
-  useEffect(() => {
-    if (hasBarcodeDetector) startCamera()
-    else setStep('url')
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  useEffect(() => { startCamera() }, [])
 
   async function processUrl(rawUrl: string) {
     const target = rawUrl || url
@@ -648,9 +650,7 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
                 onKeyDown={e => e.key === 'Enter' && processUrl(url)} autoFocus />
             </div>
             <div className="flex gap-3">
-              {hasBarcodeDetector && (
-                <button onClick={handleBackToCamera} className="btn btn-secondary flex-1"><Camera size={14} /> Usar câmera</button>
-              )}
+              <button onClick={handleBackToCamera} className="btn btn-secondary flex-1"><Camera size={14} /> Usar câmera</button>
               <button onClick={onManual} className="btn btn-secondary flex-1">Inserir manualmente</button>
               <button onClick={() => processUrl(url)} disabled={!url.trim()} className="btn btn-primary flex-1">
                 <QrCode size={14} /> Processar cupom
@@ -676,7 +676,7 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
               <p className="text-sm mt-1 max-w-sm" style={{ color: 'var(--text-muted)' }}>{error}</p>
             </div>
             <div className="flex gap-3">
-              <button onClick={() => { setStep(hasBarcodeDetector ? 'camera' : 'url'); if (hasBarcodeDetector) startCamera() }} className="btn btn-secondary">
+              <button onClick={() => { setStep('camera'); startCamera() }} className="btn btn-secondary">
                 Tentar novamente
               </button>
               <button onClick={onManual} className="btn btn-primary">Inserir manualmente</button>
@@ -727,7 +727,7 @@ function QrCodeModal({ householdId, supabaseUrl, supabaseAnon, onSave, onManual,
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <button onClick={() => setStep(hasBarcodeDetector ? 'camera' : 'url')} className="btn btn-secondary flex-1">Voltar</button>
+              <button onClick={() => { setStep('camera'); startCamera() }} className="btn btn-secondary flex-1">Voltar</button>
               <button onClick={handleSave} disabled={items.filter(i => i.selected).length === 0} className="btn btn-primary flex-1">
                 Salvar {items.filter(i => i.selected).length} itens
               </button>

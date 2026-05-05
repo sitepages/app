@@ -11,10 +11,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const buffer    = Buffer.from(await file.arrayBuffer())
-    const { text }  = await pdfParse(buffer)
+    const buffer   = Buffer.from(await file.arrayBuffer())
+    const { text } = await pdfParse(buffer)
     return NextResponse.json({ text })
-  } catch {
+  } catch (err) {
+    console.error('[parse-statement] error:', err)
     return NextResponse.json({ error: 'Não foi possível ler o PDF. Verifique se o arquivo não está protegido por senha.' }, { status: 422 })
   }
 }

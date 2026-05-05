@@ -116,6 +116,7 @@ export function useGrocery(householdId: string) {
 
   async function deleteSession(id: string) {
     const supabase = createClient()
+    await supabase.from('shopping_lists').update({ grocery_session_id: null }).eq('grocery_session_id', id)
     await supabase.from('grocery_sessions').delete().eq('id', id)
     fetchSessions()
   }

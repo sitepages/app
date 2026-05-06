@@ -214,7 +214,7 @@ export default function WishCard({
                 className="progress-fill"
                 style={{
                   width: `${percentage}%`,
-                  background: isComplete ? 'var(--brand)' : undefined,
+                  background: isComplete ? 'var(--brand)' : 'var(--info)',
                 }}
               />
             </div>

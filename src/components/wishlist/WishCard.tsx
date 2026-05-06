@@ -1,8 +1,8 @@
 'use client'
 import { useState, useRef } from 'react'
 import {
-  GripVertical, ImageIcon, ExternalLink, MoreVertical,
-  Pencil, Trash2, ArrowRight, Plus, Check, X,
+  GripVertical, ImageIcon, ExternalLink,
+  Pencil, Trash2, ArrowLeft, ArrowRight, Plus, Check, X,
 } from 'lucide-react'
 import { getWishItemProgress } from '@/lib/types/wishlist'
 import type { WishItem, WishItemStatus } from '@/lib/types/wishlist'
@@ -15,10 +15,10 @@ function fmtDate(iso: string) {
   return `${d}/${m}/${y}`
 }
 
-const STATUS_LABELS: Record<WishItemStatus, string> = {
-  quero: 'Quero',
-  economizando: 'Economizando',
-  comprado: 'Comprado',
+const MOVE_MAP: Record<WishItemStatus, { to: WishItemStatus; label: string; dir: 'left' | 'right' }[]> = {
+  quero:        [{ to: 'economizando', label: 'Economizando', dir: 'right' }],
+  economizando: [{ to: 'quero', label: 'Quero', dir: 'left' }, { to: 'comprado', label: 'Comprado', dir: 'right' }],
+  comprado:     [{ to: 'economizando', label: 'Economizando', dir: 'left' }],
 }
 
 interface Props {
@@ -39,17 +39,16 @@ export default function WishCard({
   item, rank, onEdit, onDelete, onMove, onAddSavings,
   onDragStart, onDragEnd, onDragOver, onDrop, isDragging,
 }: Props) {
-  const [menuOpen, setMenuOpen]       = useState(false)
-  const [savingOpen, setSavingOpen]   = useState(false)
-  const [savingValue, setSavingValue] = useState('')
+  const [savingOpen, setSavingOpen]       = useState(false)
+  const [savingValue, setSavingValue]     = useState('')
   const [savingLoading, setSavingLoading] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
   const savingInputRef = useRef<HTMLInputElement>(null)
   const { percentage, remaining, isComplete } = getWishItemProgress(item)
-  const hasPrice = !!item.target_price && item.target_price > 0
-
+  const hasPrice = !!item.target_price && Number(item.target_price) > 0
   const isPastDue = item.target_date && !item.purchase_date
     && new Date(item.target_date) < new Date()
+  const isTop = rank === 0 && item.status === 'quero'
+  const moveButtons = MOVE_MAP[item.status]
 
   async function handleAddSavings() {
     const amount = parseFloat(savingValue.replace(',', '.'))
@@ -61,11 +60,6 @@ export default function WishCard({
     setSavingLoading(false)
   }
 
-  const OTHER_STATUSES = (['quero', 'economizando', 'comprado'] as WishItemStatus[])
-    .filter(s => s !== item.status)
-
-  const isTop = rank === 0 && item.status === 'quero'
-
   return (
     <div
       draggable
@@ -76,16 +70,17 @@ export default function WishCard({
       style={{
         background: 'var(--bg-card)',
         border: `1px solid ${isTop ? 'var(--brand)' : 'var(--border)'}`,
+        borderLeft: isTop ? '3px solid var(--brand)' : undefined,
         borderRadius: 12,
         overflow: 'hidden',
         opacity: isDragging ? 0.4 : item.status === 'comprado' ? 0.7 : 1,
         transition: 'opacity 0.15s, border-color 0.15s',
         cursor: 'grab',
-        borderLeft: isTop ? '3px solid var(--brand)' : undefined,
+        display: 'flex', flexDirection: 'column',
       }}
     >
-      {/* Image + action buttons overlay */}
-      <div style={{ aspectRatio: '16/9', position: 'relative', overflow: 'hidden' }}>
+      {/* Image area with rank badge */}
+      <div style={{ aspectRatio: '16/9', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
         {item.image_url ? (
           <img
             src={item.image_url}
@@ -101,8 +96,6 @@ export default function WishCard({
             <ImageIcon size={28} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
           </div>
         )}
-
-        {/* Rank badge — top left */}
         <div style={{
           position: 'absolute', top: 8, left: 8,
           background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
@@ -114,12 +107,13 @@ export default function WishCard({
             #{rank + 1}
           </span>
         </div>
-
       </div>
 
-      <div style={{ padding: '10px 12px 12px' }}>
-        {/* Title row: name + link + action buttons */}
-        <div className="flex items-start gap-2 mb-2">
+      {/* Content */}
+      <div style={{ padding: '10px 12px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+
+        {/* Title row */}
+        <div className="flex items-start gap-2">
           <div className="flex items-start gap-1 flex-1 min-w-0">
             <p className="font-semibold text-sm flex-1 leading-snug" style={{ color: 'var(--text)' }}>
               {item.name}
@@ -154,79 +148,40 @@ export default function WishCard({
             >
               <Trash2 size={13} />
             </button>
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }}
-                title="Mais ações"
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--text-muted)', borderRadius: 5,
-                  width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <MoreVertical size={14} />
-              </button>
-              {menuOpen && (
-                <div
-                  ref={menuRef}
-                  onMouseLeave={() => setMenuOpen(false)}
-                  style={{
-                    position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 20,
-                    background: 'var(--bg-card)', border: '1px solid var(--border)',
-                    borderRadius: 8, padding: '4px 0', minWidth: 180,
-                    boxShadow: 'var(--shadow-lg)',
-                  }}
-                >
-                  {OTHER_STATUSES.map(s => (
-                    <button
-                      key={s}
-                      onClick={() => { setMenuOpen(false); onMove(s) }}
-                      className="flex items-center gap-2 w-full px-3 py-2 hover:bg-white/5"
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text)', display: 'flex', alignItems: 'center', lineHeight: 1, fontSize: 12 }}
-                    >
-                      <ArrowRight size={13} /> Mover para {STATUS_LABELS[s]}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
         {/* Category badge */}
         {item.category && (
-          <span className="badge" style={{
-            background: `${item.category.color ?? 'var(--brand)'}22`,
-            color: item.category.color ?? 'var(--brand)',
-            border: `1px solid ${item.category.color ?? 'var(--brand)'}44`,
-            fontSize: 10, marginBottom: 8, display: 'inline-block',
-          }}>
-            {item.category.icon && <span style={{ marginRight: 3 }}>{item.category.icon}</span>}
-            {item.category.name}
-          </span>
+          <div>
+            <span className="badge" style={{
+              background: `${item.category.color ?? 'var(--brand)'}22`,
+              color: item.category.color ?? 'var(--brand)',
+              border: `1px solid ${item.category.color ?? 'var(--brand)'}44`,
+              fontSize: 10,
+            }}>
+              {item.category.icon && <span style={{ marginRight: 3 }}>{item.category.icon}</span>}
+              {item.category.name}
+            </span>
+          </div>
         )}
 
         {/* Progress */}
         {hasPrice && (
-          <div style={{ marginBottom: 8 }}>
+          <div>
             <div className="progress-track" style={{ height: 5 }}>
-              <div
-                className="progress-fill"
-                style={{
-                  width: `${percentage}%`,
-                  background: isComplete ? 'var(--brand)' : 'var(--info)',
-                }}
-              />
+              <div className="progress-fill" style={{
+                width: `${percentage}%`,
+                background: isComplete ? 'var(--brand)' : 'var(--info)',
+              }} />
             </div>
             <div className="flex justify-between mt-1">
               {isComplete ? (
-                <span style={{ fontSize: 10, color: 'var(--brand)', fontWeight: 600 }}>
-                  ✓ Meta atingida!
-                </span>
+                <span style={{ fontSize: 10, color: 'var(--brand)', fontWeight: 600 }}>✓ Meta atingida!</span>
               ) : (
                 <>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>
-                    Juntado: {fmt(item.saved_amount)}
+                    Juntado: {fmt(Number(item.saved_amount))}
                   </span>
                   <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>
                     Falta: {fmt(remaining)}
@@ -235,7 +190,6 @@ export default function WishCard({
               )}
             </div>
 
-            {/* Mini-input juntar valor */}
             {item.status !== 'comprado' && !isComplete && (
               savingOpen ? (
                 <div className="flex items-center gap-1.5 mt-2" onClick={e => e.stopPropagation()}>
@@ -247,7 +201,10 @@ export default function WishCard({
                     step="0.01"
                     value={savingValue}
                     onChange={e => setSavingValue(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleAddSavings(); if (e.key === 'Escape') { setSavingOpen(false); setSavingValue('') } }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleAddSavings()
+                      if (e.key === 'Escape') { setSavingOpen(false); setSavingValue('') }
+                    }}
                     placeholder="0,00"
                     style={{
                       flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)',
@@ -255,26 +212,21 @@ export default function WishCard({
                       fontFamily: 'DM Mono, monospace', outline: 'none',
                     }}
                   />
-                  <button
-                    onClick={handleAddSavings}
-                    disabled={savingLoading || !savingValue}
+                  <button onClick={handleAddSavings} disabled={savingLoading || !savingValue}
                     style={{
                       background: 'var(--brand)', border: 'none', borderRadius: 6,
                       width: 26, height: 26, cursor: 'pointer', color: '#000',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    }}
-                  >
+                    }}>
                     <Check size={13} />
                   </button>
-                  <button
-                    onClick={() => { setSavingOpen(false); setSavingValue('') }}
+                  <button onClick={() => { setSavingOpen(false); setSavingValue('') }}
                     style={{
                       background: 'var(--bg-elevated)', border: '1px solid var(--border)',
                       borderRadius: 6, width: 26, height: 26, cursor: 'pointer',
                       color: 'var(--text-muted)', display: 'flex', alignItems: 'center',
                       justifyContent: 'center', flexShrink: 0,
-                    }}
-                  >
+                    }}>
                     <X size={13} />
                   </button>
                 </div>
@@ -298,15 +250,45 @@ export default function WishCard({
 
         {/* Dates */}
         {item.status === 'comprado' && item.purchase_date && (
-          <p style={{ fontSize: 10, color: 'var(--info)' }}>
-            Comprado em {fmtDate(item.purchase_date)}
-          </p>
+          <p style={{ fontSize: 10, color: 'var(--info)' }}>Comprado em {fmtDate(item.purchase_date)}</p>
         )}
         {item.target_date && item.status !== 'comprado' && (
           <p style={{ fontSize: 10, color: isPastDue ? 'var(--danger)' : 'var(--text-muted)' }}>
             Prazo: {fmtDate(item.target_date)}{isPastDue ? ' — Vencido' : ''}
           </p>
         )}
+      </div>
+
+      {/* Move buttons footer */}
+      <div style={{
+        display: 'flex', borderTop: '1px solid var(--border)',
+      }}>
+        {moveButtons.map(({ to, label, dir }) => (
+          <button
+            key={to}
+            onClick={e => { e.stopPropagation(); onMove(to) }}
+            style={{
+              flex: 1, background: 'none', border: 'none', cursor: 'pointer',
+              padding: '7px 8px', fontSize: 11, fontWeight: 600,
+              color: 'var(--text-muted)', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', gap: 5,
+              transition: 'background 0.15s, color 0.15s',
+              borderRight: dir === 'left' && moveButtons.length > 1 ? '1px solid var(--border)' : 'none',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'var(--bg-elevated)'
+              ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'none'
+              ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)'
+            }}
+          >
+            {dir === 'left' && <ArrowLeft size={11} />}
+            {label}
+            {dir === 'right' && <ArrowRight size={11} />}
+          </button>
+        ))}
       </div>
     </div>
   )

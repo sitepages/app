@@ -7,7 +7,7 @@ import {
   LayoutDashboard, ArrowLeftRight, Upload, FileUp,
   Wallet, TrendingUp, ShoppingCart, Target,
   BarChart3, Settings, LogOut, CreditCard,
-  TrendingDown, Home, Menu, X, Sun, Moon, Heart,
+  TrendingDown, Home, Menu, X, Sun, Moon, Heart, BookOpen,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 
@@ -40,6 +40,7 @@ const NAV_GROUPS = [
       { href: '/dashboard/goals',          label: 'Metas',         icon: Target,       color: '#EC4899' },
       { href: '/dashboard/wishlist',       label: 'Desejos',       icon: Heart,        color: '#F472B6' },
       { href: '/dashboard/analytics',      label: 'Histórico',     icon: BarChart3,    color: '#06B6D4' },
+      { href: '/dashboard/guia',           label: 'Guia',          icon: BookOpen,     color: '#00C47A' },
     ],
   },
 ]

@@ -100,87 +100,82 @@ export default function WishCard({
           </span>
         </div>
 
-        {/* Action buttons — top right */}
-        <div style={{
-          position: 'absolute', top: 8, right: 8,
-          display: 'flex', gap: 4,
-        }}>
-          <button
-            onClick={e => { e.stopPropagation(); onEdit() }}
-            title="Editar"
-            style={{
-              background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
-              border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.85)',
-              borderRadius: 6, width: 28, height: 28,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Pencil size={13} />
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); onDelete() }}
-            title="Excluir"
-            style={{
-              background: 'rgba(248,113,113,0.25)', backdropFilter: 'blur(4px)',
-              border: '1px solid rgba(248,113,113,0.4)', cursor: 'pointer',
-              color: '#F87171', borderRadius: 6, width: 28, height: 28,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Trash2 size={13} />
-          </button>
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }}
-              title="Mais ações"
-              style={{
-                background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
-                border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.85)',
-                borderRadius: 6, width: 28, height: 28,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <MoreVertical size={15} />
-            </button>
-            {menuOpen && (
-              <div
-                ref={menuRef}
-                onMouseLeave={() => setMenuOpen(false)}
-                style={{
-                  position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 20,
-                  background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  borderRadius: 8, padding: '4px 0', minWidth: 180,
-                  boxShadow: 'var(--shadow-lg)',
-                }}
-              >
-                {OTHER_STATUSES.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => { setMenuOpen(false); onMove(s) }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/5"
-                    style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text)' }}
-                  >
-                    <ArrowRight size={13} /> Mover para {STATUS_LABELS[s]}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       <div style={{ padding: '10px 12px 12px' }}>
-        {/* Name + link */}
-        <div className="flex items-start gap-1.5 mb-2">
-          <p className="font-semibold text-sm flex-1 leading-snug" style={{ color: 'var(--text)' }}>
-            {item.name}
-          </p>
-          {item.url && (
-            <a href={item.url} target="_blank" rel="noopener noreferrer"
-              style={{ color: 'var(--info)', flexShrink: 0, marginTop: 2 }}>
-              <ExternalLink size={13} />
-            </a>
-          )}
+        {/* Title row: name + link + action buttons */}
+        <div className="flex items-start gap-2 mb-2">
+          <div className="flex items-start gap-1 flex-1 min-w-0">
+            <p className="font-semibold text-sm flex-1 leading-snug" style={{ color: 'var(--text)' }}>
+              {item.name}
+            </p>
+            {item.url && (
+              <a href={item.url} target="_blank" rel="noopener noreferrer"
+                style={{ color: 'var(--info)', flexShrink: 0, marginTop: 2 }}>
+                <ExternalLink size={13} />
+              </a>
+            )}
+          </div>
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <button
+              onClick={e => { e.stopPropagation(); onEdit() }}
+              title="Editar"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--text-muted)', borderRadius: 5,
+                width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); onDelete() }}
+              title="Excluir"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--danger)', borderRadius: 5,
+                width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Trash2 size={13} />
+            </button>
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }}
+                title="Mais ações"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: 'var(--text-muted)', borderRadius: 5,
+                  width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <MoreVertical size={14} />
+              </button>
+              {menuOpen && (
+                <div
+                  ref={menuRef}
+                  onMouseLeave={() => setMenuOpen(false)}
+                  style={{
+                    position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 20,
+                    background: 'var(--bg-card)', border: '1px solid var(--border)',
+                    borderRadius: 8, padding: '4px 0', minWidth: 180,
+                    boxShadow: 'var(--shadow-lg)',
+                  }}
+                >
+                  {OTHER_STATUSES.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => { setMenuOpen(false); onMove(s) }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/5"
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text)' }}
+                    >
+                      <ArrowRight size={13} /> Mover para {STATUS_LABELS[s]}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Category badge */}

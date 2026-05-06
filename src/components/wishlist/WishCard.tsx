@@ -166,8 +166,8 @@ export default function WishCard({
                     <button
                       key={s}
                       onClick={() => { setMenuOpen(false); onMove(s) }}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/5"
-                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text)', display: 'flex', alignItems: 'center', lineHeight: 1 }}
+                      className="flex items-center gap-2 w-full px-3 py-2 hover:bg-white/5"
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text)', display: 'flex', alignItems: 'center', lineHeight: 1, fontSize: 12 }}
                     >
                       <ArrowRight size={13} /> Mover para {STATUS_LABELS[s]}
                     </button>

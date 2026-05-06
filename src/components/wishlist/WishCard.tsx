@@ -69,62 +69,75 @@ export default function WishCard({
         borderLeft: isTop ? '3px solid var(--brand)' : undefined,
       }}
     >
-      {/* Image */}
-      {item.image_url ? (
-        <div style={{ aspectRatio: '16/9', overflow: 'hidden', position: 'relative' }}>
+      {/* Image + action buttons overlay */}
+      <div style={{ aspectRatio: '16/9', position: 'relative', overflow: 'hidden' }}>
+        {item.image_url ? (
           <img
             src={item.image_url}
             alt={item.name}
             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           />
-        </div>
-      ) : (
-        <div style={{
-          aspectRatio: '16/9',
-          background: 'var(--bg-elevated)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <ImageIcon size={28} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
-        </div>
-      )}
-
-      <div style={{ padding: '10px 12px 12px' }}>
-        {/* Top row: grip + rank + menu */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <GripVertical size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-            <span style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--text-muted)',
-              fontFamily: 'DM Mono, monospace',
-            }}>#{rank + 1}</span>
+        ) : (
+          <div style={{
+            width: '100%', height: '100%',
+            background: 'var(--bg-elevated)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <ImageIcon size={28} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
           </div>
-          <div className="flex items-center gap-1" style={{ position: 'relative' }}>
+        )}
+
+        {/* Rank badge — top left */}
+        <div style={{
+          position: 'absolute', top: 8, left: 8,
+          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+          borderRadius: 6, padding: '2px 7px',
+          display: 'flex', alignItems: 'center', gap: 4,
+        }}>
+          <GripVertical size={11} style={{ color: 'rgba(255,255,255,0.6)' }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.85)', fontFamily: 'DM Mono, monospace' }}>
+            #{rank + 1}
+          </span>
+        </div>
+
+        {/* Action buttons — top right */}
+        <div style={{
+          position: 'absolute', top: 8, right: 8,
+          display: 'flex', gap: 4,
+        }}>
+          <button
+            onClick={e => { e.stopPropagation(); onEdit() }}
+            title="Editar"
+            style={{
+              background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+              border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.85)',
+              borderRadius: 6, width: 28, height: 28,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Pencil size={13} />
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onDelete() }}
+            title="Excluir"
+            style={{
+              background: 'rgba(248,113,113,0.25)', backdropFilter: 'blur(4px)',
+              border: '1px solid rgba(248,113,113,0.4)', cursor: 'pointer',
+              color: '#F87171', borderRadius: 6, width: 28, height: 28,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Trash2 size={13} />
+          </button>
+          <div style={{ position: 'relative' }}>
             <button
-              onClick={() => onEdit()}
-              title="Editar"
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--text-muted)', padding: '2px 4px', borderRadius: 4,
-              }}
-            >
-              <Pencil size={13} />
-            </button>
-            <button
-              onClick={() => onDelete()}
-              title="Excluir"
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--danger)', padding: '2px 4px', borderRadius: 4,
-              }}
-            >
-              <Trash2 size={13} />
-            </button>
-            <button
-              onClick={() => setMenuOpen(o => !o)}
+              onClick={e => { e.stopPropagation(); setMenuOpen(o => !o) }}
               title="Mais ações"
               style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--text-muted)', padding: '2px 4px', borderRadius: 4,
+                background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+                border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.85)',
+                borderRadius: 6, width: 28, height: 28,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
               <MoreVertical size={15} />
@@ -134,19 +147,12 @@ export default function WishCard({
                 ref={menuRef}
                 onMouseLeave={() => setMenuOpen(false)}
                 style={{
-                  position: 'absolute', right: 0, top: '100%', zIndex: 10,
+                  position: 'absolute', right: 0, top: '100%', marginTop: 4, zIndex: 20,
                   background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  borderRadius: 8, padding: '4px 0', minWidth: 160,
+                  borderRadius: 8, padding: '4px 0', minWidth: 180,
                   boxShadow: 'var(--shadow-lg)',
                 }}
               >
-                <button
-                  onClick={() => { setMenuOpen(false); onEdit() }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/5"
-                  style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text)' }}
-                >
-                  <Pencil size={13} /> Editar
-                </button>
                 {OTHER_STATUSES.map(s => (
                   <button
                     key={s}
@@ -157,18 +163,13 @@ export default function WishCard({
                     <ArrowRight size={13} /> Mover para {STATUS_LABELS[s]}
                   </button>
                 ))}
-                <button
-                  onClick={() => { setMenuOpen(false); onDelete() }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-white/5"
-                  style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--danger)' }}
-                >
-                  <Trash2 size={13} /> Excluir
-                </button>
               </div>
             )}
           </div>
         </div>
+      </div>
 
+      <div style={{ padding: '10px 12px 12px' }}>
         {/* Name + link */}
         <div className="flex items-start gap-1.5 mb-2">
           <p className="font-semibold text-sm flex-1 leading-snug" style={{ color: 'var(--text)' }}>

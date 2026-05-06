@@ -210,6 +210,7 @@ export default function WishlistBoard() {
                 onEdit={openEdit}
                 onDelete={deleteItem}
                 onMove={moveItem}
+                onAddSavings={(id, amount) => updateItem(id, { saved_amount: (items.find(i => i.id === id)?.saved_amount ?? 0) + amount })}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
@@ -230,6 +231,7 @@ export default function WishlistBoard() {
                 onEdit={openEdit}
                 onDelete={deleteItem}
                 onMove={moveItem}
+                onAddSavings={(id, amount) => updateItem(id, { saved_amount: (items.find(i => i.id === id)?.saved_amount ?? 0) + amount })}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
@@ -257,7 +259,7 @@ export default function WishlistBoard() {
 }
 
 function Column({
-  col, colItems, total, onEdit, onDelete, onMove,
+  col, colItems, total, onEdit, onDelete, onMove, onAddSavings,
   onDragStart, onDragEnd, onDragOver, onDrop, dragItemId,
 }: {
   col: { status: WishItemStatus; label: string; color: string }
@@ -266,6 +268,7 @@ function Column({
   onEdit: (item: WishItem) => void
   onDelete: (id: string) => void
   onMove: (id: string, status: WishItemStatus) => void
+  onAddSavings: (id: string, amount: number) => Promise<void> | void
   onDragStart: (e: React.DragEvent, id: string) => void
   onDragEnd: (e: React.DragEvent) => void
   onDragOver: (e: React.DragEvent, status: WishItemStatus, index: number) => void
@@ -312,6 +315,7 @@ function Column({
               onEdit={() => onEdit(item)}
               onDelete={() => onDelete(item.id)}
               onMove={status => onMove(item.id, status)}
+              onAddSavings={amount => onAddSavings(item.id, amount)}
               onDragStart={e => onDragStart(e, item.id)}
               onDragEnd={onDragEnd}
               onDragOver={e => onDragOver(e, col.status, idx)}

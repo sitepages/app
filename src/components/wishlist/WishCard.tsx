@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react'
 import {
   GripVertical, ImageIcon, ExternalLink, MoreVertical,
-  Pencil, Trash2, ArrowRight,
+  Pencil, Trash2, ArrowRight, Plus, Check, X,
 } from 'lucide-react'
 import { getWishItemProgress } from '@/lib/types/wishlist'
 import type { WishItem, WishItemStatus } from '@/lib/types/wishlist'
@@ -27,6 +27,7 @@ interface Props {
   onEdit: () => void
   onDelete: () => void
   onMove: (status: WishItemStatus) => void
+  onAddSavings: (amount: number) => Promise<void> | void
   onDragStart: (e: React.DragEvent) => void
   onDragEnd: (e: React.DragEvent) => void
   onDragOver: (e: React.DragEvent) => void
@@ -35,16 +36,30 @@ interface Props {
 }
 
 export default function WishCard({
-  item, rank, onEdit, onDelete, onMove,
+  item, rank, onEdit, onDelete, onMove, onAddSavings,
   onDragStart, onDragEnd, onDragOver, onDrop, isDragging,
 }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen]       = useState(false)
+  const [savingOpen, setSavingOpen]   = useState(false)
+  const [savingValue, setSavingValue] = useState('')
+  const [savingLoading, setSavingLoading] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const savingInputRef = useRef<HTMLInputElement>(null)
   const { percentage, remaining, isComplete } = getWishItemProgress(item)
   const hasPrice = !!item.target_price && item.target_price > 0
 
   const isPastDue = item.target_date && !item.purchase_date
     && new Date(item.target_date) < new Date()
+
+  async function handleAddSavings() {
+    const amount = parseFloat(savingValue.replace(',', '.'))
+    if (!amount || amount <= 0) return
+    setSavingLoading(true)
+    await onAddSavings(amount)
+    setSavingValue('')
+    setSavingOpen(false)
+    setSavingLoading(false)
+  }
 
   const OTHER_STATUSES = (['quero', 'economizando', 'comprado'] as WishItemStatus[])
     .filter(s => s !== item.status)
@@ -219,6 +234,65 @@ export default function WishCard({
                 </>
               )}
             </div>
+
+            {/* Mini-input juntar valor */}
+            {item.status !== 'comprado' && !isComplete && (
+              savingOpen ? (
+                <div className="flex items-center gap-1.5 mt-2" onClick={e => e.stopPropagation()}>
+                  <input
+                    ref={savingInputRef}
+                    autoFocus
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={savingValue}
+                    onChange={e => setSavingValue(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleAddSavings(); if (e.key === 'Escape') { setSavingOpen(false); setSavingValue('') } }}
+                    placeholder="0,00"
+                    style={{
+                      flex: 1, background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                      borderRadius: 6, padding: '4px 8px', fontSize: 12, color: 'var(--text)',
+                      fontFamily: 'DM Mono, monospace', outline: 'none',
+                    }}
+                  />
+                  <button
+                    onClick={handleAddSavings}
+                    disabled={savingLoading || !savingValue}
+                    style={{
+                      background: 'var(--brand)', border: 'none', borderRadius: 6,
+                      width: 26, height: 26, cursor: 'pointer', color: '#000',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}
+                  >
+                    <Check size={13} />
+                  </button>
+                  <button
+                    onClick={() => { setSavingOpen(false); setSavingValue('') }}
+                    style={{
+                      background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                      borderRadius: 6, width: 26, height: 26, cursor: 'pointer',
+                      color: 'var(--text-muted)', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', flexShrink: 0,
+                    }}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={e => { e.stopPropagation(); setSavingOpen(true) }}
+                  style={{
+                    marginTop: 8, background: 'none', border: '1px dashed var(--border)',
+                    borderRadius: 6, padding: '4px 10px', cursor: 'pointer',
+                    color: 'var(--brand)', fontSize: 11, fontWeight: 600,
+                    display: 'flex', alignItems: 'center', gap: 4, width: '100%',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Plus size={12} /> Juntar valor
+                </button>
+              )
+            )}
           </div>
         )}
 

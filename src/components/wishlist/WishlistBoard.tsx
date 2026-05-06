@@ -210,7 +210,7 @@ export default function WishlistBoard() {
                 onEdit={openEdit}
                 onDelete={deleteItem}
                 onMove={moveItem}
-                onAddSavings={(id, amount) => updateItem(id, { saved_amount: (items.find(i => i.id === id)?.saved_amount ?? 0) + amount })}
+                onAddSavings={(id, amount) => updateItem(id, { saved_amount: Number(items.find(i => i.id === id)?.saved_amount ?? 0) + amount })}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}
@@ -231,7 +231,7 @@ export default function WishlistBoard() {
                 onEdit={openEdit}
                 onDelete={deleteItem}
                 onMove={moveItem}
-                onAddSavings={(id, amount) => updateItem(id, { saved_amount: (items.find(i => i.id === id)?.saved_amount ?? 0) + amount })}
+                onAddSavings={(id, amount) => updateItem(id, { saved_amount: Number(items.find(i => i.id === id)?.saved_amount ?? 0) + amount })}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDragOver={handleDragOver}

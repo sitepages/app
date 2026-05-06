@@ -54,8 +54,10 @@ export function getWishItemProgress(item: WishItem): {
   if (!item.target_price || item.target_price <= 0) {
     return { percentage: 0, remaining: 0, isComplete: false }
   }
-  const percentage = Math.min(100, (item.saved_amount / item.target_price) * 100)
-  const remaining = Math.max(0, item.target_price - item.saved_amount)
-  const isComplete = item.saved_amount >= item.target_price
+  const saved = Number(item.saved_amount)
+  const target = Number(item.target_price)
+  const percentage = Math.min(100, (saved / target) * 100)
+  const remaining = Math.max(0, target - saved)
+  const isComplete = saved >= target
   return { percentage, remaining, isComplete }
 }

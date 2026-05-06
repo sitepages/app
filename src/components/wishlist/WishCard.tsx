@@ -98,9 +98,30 @@ export default function WishCard({
               fontFamily: 'DM Mono, monospace',
             }}>#{rank + 1}</span>
           </div>
-          <div style={{ position: 'relative' }}>
+          <div className="flex items-center gap-1" style={{ position: 'relative' }}>
+            <button
+              onClick={() => onEdit()}
+              title="Editar"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--text-muted)', padding: '2px 4px', borderRadius: 4,
+              }}
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              onClick={() => onDelete()}
+              title="Excluir"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--danger)', padding: '2px 4px', borderRadius: 4,
+              }}
+            >
+              <Trash2 size={13} />
+            </button>
             <button
               onClick={() => setMenuOpen(o => !o)}
+              title="Mais ações"
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'var(--text-muted)', padding: '2px 4px', borderRadius: 4,

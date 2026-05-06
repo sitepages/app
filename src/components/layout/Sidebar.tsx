@@ -7,7 +7,7 @@ import {
   LayoutDashboard, ArrowLeftRight, Upload, FileUp,
   Wallet, TrendingUp, ShoppingCart, Target,
   BarChart3, Settings, LogOut, CreditCard,
-  TrendingDown, Home, Menu, X, Sun, Moon,
+  TrendingDown, Home, Menu, X, Sun, Moon, Heart,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
 
@@ -38,6 +38,7 @@ const NAV_GROUPS = [
       { href: '/dashboard/credit-card',    label: 'Cartão',        icon: CreditCard,   color: '#F87171' },
       { href: '/dashboard/grocery',        label: 'Mercado',       icon: ShoppingCart, color: '#F97316' },
       { href: '/dashboard/goals',          label: 'Metas',         icon: Target,       color: '#EC4899' },
+      { href: '/dashboard/wishlist',       label: 'Desejos',       icon: Heart,        color: '#F472B6' },
       { href: '/dashboard/analytics',      label: 'Histórico',     icon: BarChart3,    color: '#06B6D4' },
     ],
   },
@@ -48,7 +49,7 @@ const BOTTOM_NAV = [
   { href: '/dashboard/transactions', label: 'Transações', icon: ArrowLeftRight,  color: '#3B82F6' },
   { href: '/dashboard/import',       label: 'Importar',   icon: Upload,          color: '#8B5CF6' },
   { href: '/dashboard/grocery',      label: 'Mercado',    icon: ShoppingCart,    color: '#F97316' },
-  { href: '/dashboard/analytics',    label: 'Histórico',  icon: BarChart3,       color: '#06B6D4' },
+  { href: '/dashboard/wishlist',      label: 'Desejos',    icon: Heart,           color: '#F472B6' },
 ]
 
 function NavLink({ href, label, icon: Icon, color, compact = false, onClick }: {

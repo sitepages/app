@@ -28,9 +28,10 @@ export interface InstallmentPlan {
 }
 
 export function useInstallments(householdId: string) {
-  const [plans, setPlans]   = useState<InstallmentPlan[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError]   = useState<string | null>(null)
+  const [plans, setPlans]         = useState<InstallmentPlan[]>([])
+  const [completed, setCompleted] = useState<InstallmentPlan[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState<string | null>(null)
 
   const fetch = useCallback(async () => {
     setLoading(true)
@@ -40,26 +41,22 @@ export function useInstallments(householdId: string) {
       .from('installment_plans')
       .select('*, categories(name, color), accounts(name)')
       .eq('household_id', householdId)
-      .eq('is_active', true)
       .order('created_at', { ascending: false })
 
     if (error) { setError(error.message); setLoading(false); return }
 
-    const enriched = (data ?? []).map(p => {
-      const remaining  = p.total_installments - p.current_installment
-      const committed  = remaining * Number(p.installment_amount)
-      const paid       = p.current_installment - 1
-      const percent    = Math.round((paid / p.total_installments) * 100)
-      return {
-        ...p,
-        remaining_installments: remaining,
-        committed_value:        committed,
-        paid_installments:      paid,
-        percent_paid:           percent,
-      }
-    })
+    const enrich = (p: any) => {
+      const remaining = p.total_installments - p.current_installment
+      const committed = remaining * Number(p.installment_amount)
+      const paid      = p.current_installment - 1
+      const percent   = Math.round((paid / p.total_installments) * 100)
+      return { ...p, remaining_installments: remaining, committed_value: committed,
+               paid_installments: paid, percent_paid: percent }
+    }
 
-    setPlans(enriched)
+    const all = (data ?? []).map(enrich)
+    setPlans(all.filter(p => p.is_active))
+    setCompleted(all.filter(p => !p.is_active))
     setLoading(false)
   }, [householdId])
 
@@ -105,6 +102,26 @@ export function useInstallments(householdId: string) {
     return { error }
   }
 
+  async function updatePlan(id: string, data: Partial<InstallmentPlan>) {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('installment_plans')
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (!error) fetch()
+    return { error }
+  }
+
+  async function reactivatePlan(id: string) {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('installment_plans')
+      .update({ is_active: true, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (!error) fetch()
+    return { error }
+  }
+
   async function updateInstallment(id: string, current_installment: number) {
     const supabase = createClient()
     const { error } = await supabase
@@ -133,10 +150,10 @@ export function useInstallments(householdId: string) {
   }
 
   return {
-    plans, loading, error,
+    plans, completedPlans: completed, loading, error,
     totalCommitted,
     getMonthlyProjection,
-    createPlan, updateInstallment, closePlan, deletePlan,
+    createPlan, updatePlan, updateInstallment, closePlan, reactivatePlan, deletePlan,
     refetch: fetch,
   }
 }

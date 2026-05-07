@@ -6,7 +6,7 @@ import { useCategories }      from '@/hooks/useCategories'
 import { useAccounts }        from '@/hooks/useAccounts'
 import {
   Lock, Plus, X, Trash2, CheckCircle,
-  ChevronUp, ChevronDown, TrendingDown,
+  ChevronUp, ChevronDown, TrendingDown, Pencil, RotateCcw,
 } from 'lucide-react'
 
 const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
@@ -21,11 +21,13 @@ function monthLabel(m: string) {
 }
 
 export default function InstallmentsPage() {
-  const { plans, loading, totalCommitted, getMonthlyProjection,
-          createPlan, updateInstallment, closePlan, deletePlan } = useInstallments(HOUSEHOLD_ID)
+  const { plans, completedPlans, loading, totalCommitted, getMonthlyProjection,
+          createPlan, updatePlan, updateInstallment, closePlan, reactivatePlan, deletePlan } = useInstallments(HOUSEHOLD_ID)
   const { categories } = useCategories()
   const { accounts }   = useAccounts(HOUSEHOLD_ID)
   const [showForm, setShowForm]         = useState(false)
+  const [editing, setEditing]           = useState<any>(null)
+  const [showCompleted, setShowCompleted] = useState(false)
   const [expandedId, setExpandedId]     = useState<string | null>(null)
   const [payments, setPayments]         = useState<any[]>([])
   const [loadingPay, setLoadingPay]     = useState(false)
@@ -52,7 +54,7 @@ export default function InstallmentsPage() {
           <h1 className="page-title">Parcelas Futuras</h1>
           <p className="page-subtitle">Rendimento comprometido com compras parceladas</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn btn-primary self-start">
+        <button onClick={() => { setEditing(null); setShowForm(true) }} className="btn btn-primary self-start">
           <Plus size={14} /> Adicionar parcela
         </button>
       </div>
@@ -173,7 +175,7 @@ export default function InstallmentsPage() {
               Adicione manualmente ou importe um CSV com parcelas detectadas automaticamente
             </p>
           </div>
-          <button onClick={() => setShowForm(true)} className="btn btn-primary mt-2">
+          <button onClick={() => { setEditing(null); setShowForm(true) }} className="btn btn-primary mt-2">
             <Plus size={14} /> Adicionar parcela
           </button>
         </div>
@@ -183,6 +185,7 @@ export default function InstallmentsPage() {
             <InstallmentCard key={plan.id} plan={plan}
               onUpdateCurrent={n => updateInstallment(plan.id, n)}
               onClose={() => { if (confirm('Marcar como concluída?')) closePlan(plan.id) }}
+              onEdit={() => { setEditing(plan); setShowForm(true) }}
               onDelete={() => { if (confirm('Excluir este plano?')) deletePlan(plan.id) }}
               onExpandPayments={() => handleExpandPayments(plan.id)}
               isExpanded={expandedId === plan.id}
@@ -191,24 +194,67 @@ export default function InstallmentsPage() {
             />
           ))}
         </div>
+
+        {/* Parcelas concluídas */}
+        {completedPlans.length > 0 && (
+          <div className="mt-6">
+            <button
+              onClick={() => setShowCompleted(v => !v)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                       display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <span className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: 'var(--text-muted)' }}>
+                {showCompleted ? '▲' : '▼'} Parcelas concluídas ({completedPlans.length})
+              </span>
+            </button>
+            {showCompleted && (
+              <div className="space-y-3">
+                {completedPlans.map(plan => (
+                  <InstallmentCard key={plan.id} plan={plan}
+                    completed
+                    onUpdateCurrent={n => updateInstallment(plan.id, n)}
+                    onClose={() => {}}
+                    onReactivate={() => { if (confirm('Reativar este plano?')) reactivatePlan(plan.id) }}
+                    onEdit={() => { setEditing(plan); setShowForm(true) }}
+                    onDelete={() => { if (confirm('Excluir este plano?')) deletePlan(plan.id) }}
+                    onExpandPayments={() => handleExpandPayments(plan.id)}
+                    isExpanded={expandedId === plan.id}
+                    payments={expandedId === plan.id ? payments : []}
+                    loadingPayments={loadingPay && expandedId === plan.id}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       )}
 
       {showForm && (
         <InstallmentForm categories={categories} accounts={accounts}
-          onSave={async data => { await createPlan(data); setShowForm(false) }}
-          onClose={() => setShowForm(false)} />
+          plan={editing}
+          onSave={async data => {
+            if (editing) {
+              await updatePlan(editing.id, data)
+            } else {
+              await createPlan({ ...data, is_active: true })
+            }
+            setShowForm(false)
+            setEditing(null)
+          }}
+          onClose={() => { setShowForm(false); setEditing(null) }} />
       )}
     </div>
   )
 }
 
 // ── Card de parcela ───────────────────────────────────────────────
-function InstallmentCard({ plan, onUpdateCurrent, onClose, onDelete,
-  onExpandPayments, isExpanded, payments, loadingPayments }: {
+function InstallmentCard({ plan, onUpdateCurrent, onClose, onDelete, onEdit,
+  onReactivate, onExpandPayments, isExpanded, payments, loadingPayments, completed }: {
   plan: any; onUpdateCurrent: (n: number) => Promise<void>
-  onClose: () => void; onDelete: () => void
+  onClose: () => void; onDelete: () => void; onEdit: () => void
+  onReactivate?: () => void
   onExpandPayments: () => void; isExpanded: boolean
-  payments: any[]; loadingPayments: boolean
+  payments: any[]; loadingPayments: boolean; completed?: boolean
 }) {
   const [updating, setUpdating] = useState(false)
   const isAlmostDone = plan.remaining_installments <= 2
@@ -295,22 +341,35 @@ function InstallmentCard({ plan, onUpdateCurrent, onClose, onDelete,
 
         {/* Controles */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <div className="flex flex-col gap-0.5">
-            <button onClick={() => handleStep(-1)}
-              disabled={updating || plan.current_installment <= 1}
-              className="btn btn-ghost btn-sm" style={{ padding: '3px 7px' }} title="Voltar parcela">
-              <ChevronUp size={13} />
-            </button>
-            <button onClick={() => handleStep(1)}
-              disabled={updating || plan.current_installment >= plan.total_installments}
-              className="btn btn-ghost btn-sm" style={{ padding: '3px 7px' }} title="Avançar parcela">
-              <ChevronDown size={13} />
-            </button>
-          </div>
-          <button onClick={onClose} className="btn btn-ghost btn-sm"
-            style={{ padding: '5px', color: 'var(--success)' }} title="Concluir">
-            <CheckCircle size={14} />
+          {!completed && (
+            <div className="flex flex-col gap-0.5">
+              <button onClick={() => handleStep(-1)}
+                disabled={updating || plan.current_installment <= 1}
+                className="btn btn-ghost btn-sm" style={{ padding: '3px 7px' }} title="Voltar parcela">
+                <ChevronUp size={13} />
+              </button>
+              <button onClick={() => handleStep(1)}
+                disabled={updating || plan.current_installment >= plan.total_installments}
+                className="btn btn-ghost btn-sm" style={{ padding: '3px 7px' }} title="Avançar parcela">
+                <ChevronDown size={13} />
+              </button>
+            </div>
+          )}
+          <button onClick={onEdit} className="btn btn-ghost btn-sm"
+            style={{ padding: '5px', color: 'var(--info)' }} title="Editar">
+            <Pencil size={14} />
           </button>
+          {completed ? (
+            <button onClick={onReactivate} className="btn btn-ghost btn-sm"
+              style={{ padding: '5px', color: 'var(--brand)' }} title="Reativar">
+              <RotateCcw size={14} />
+            </button>
+          ) : (
+            <button onClick={onClose} className="btn btn-ghost btn-sm"
+              style={{ padding: '5px', color: 'var(--success)' }} title="Concluir">
+              <CheckCircle size={14} />
+            </button>
+          )}
           <button onClick={onDelete} className="btn btn-ghost btn-sm"
             style={{ padding: '5px', color: 'var(--danger)' }} title="Excluir">
             <Trash2 size={14} />
@@ -368,14 +427,20 @@ function InstallmentCard({ plan, onUpdateCurrent, onClose, onDelete,
 }
 
 // ── Formulário ────────────────────────────────────────────────────
-function InstallmentForm({ categories, accounts, onSave, onClose }: {
+function InstallmentForm({ categories, accounts, plan, onSave, onClose }: {
   categories: any[]; accounts: any[]
+  plan?: any
   onSave: (data: any) => Promise<void>; onClose: () => void
 }) {
   const today = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({
-    description: '', installment_amount: '', total_installments: '',
-    current_installment: '1', start_date: today, account_id: '', category_id: '',
+    description:         plan?.description                    ?? '',
+    installment_amount:  plan?.installment_amount             ?? '',
+    total_installments:  plan?.total_installments             ?? '',
+    current_installment: String(plan?.current_installment     ?? '1'),
+    start_date:          plan?.start_date                     ?? today,
+    account_id:          plan?.account_id                     ?? '',
+    category_id:         plan?.category_id                    ?? '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -392,7 +457,6 @@ function InstallmentForm({ categories, accounts, onSave, onClose }: {
       total_installments: total, current_installment: current,
       total_amount: amount * total, start_date: form.start_date,
       account_id: form.account_id || null, category_id: form.category_id || null,
-      is_active: true,
     })
     setSaving(false)
   }
@@ -406,7 +470,7 @@ function InstallmentForm({ categories, accounts, onSave, onClose }: {
                     padding: 28, width: '100%', maxWidth: 500, boxShadow: 'var(--shadow-lg)' }}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-semibold text-base" style={{ color: 'var(--text)', letterSpacing: '-0.2px' }}>
-            Adicionar parcela
+            {plan ? 'Editar parcela' : 'Adicionar parcela'}
           </h2>
           <button onClick={onClose} className="btn btn-ghost btn-sm" style={{ padding: '4px 8px' }}>
             <X size={16} />
@@ -496,7 +560,7 @@ function InstallmentForm({ categories, accounts, onSave, onClose }: {
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn btn-secondary flex-1">Cancelar</button>
             <button type="submit" disabled={saving} className="btn btn-primary flex-1">
-              {saving ? 'Salvando...' : 'Adicionar parcela'}
+              {saving ? 'Salvando...' : plan ? 'Salvar alterações' : 'Adicionar parcela'}
             </button>
           </div>
         </form>

@@ -46,9 +46,9 @@ export function useInstallments(householdId: string) {
     if (error) { setError(error.message); setLoading(false); return }
 
     const enrich = (p: any) => {
-      const remaining = p.total_installments - p.current_installment
+      const remaining = p.is_active ? p.total_installments - p.current_installment : 0
       const committed = remaining * Number(p.installment_amount)
-      const paid      = p.current_installment - 1
+      const paid      = p.is_active ? p.current_installment - 1 : p.total_installments
       const percent   = Math.round((paid / p.total_installments) * 100)
       return { ...p, remaining_installments: remaining, committed_value: committed,
                paid_installments: paid, percent_paid: percent }

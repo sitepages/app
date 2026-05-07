@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/services/supabase/server'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse')
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
+
   const formData = await req.formData()
   const file = formData.get('pdf') as File | null
 

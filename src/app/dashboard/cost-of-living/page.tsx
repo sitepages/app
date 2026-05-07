@@ -258,9 +258,24 @@ export default function CostOfLivingPage() {
             </button>
           </div>
           <div className="card overflow-hidden">
+            {varCosts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+                    Nenhum custo variável cadastrado
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Ex: Supermercado, Lazer, Combustível, Restaurantes
+                  </p>
+                </div>
+                <button onClick={() => { setFormType('VARIABLE'); setShowForm(true) }}
+                  className="btn btn-primary btn-sm mt-1">
+                  <Plus size={12} /> Adicionar custo variável
+                </button>
+              </div>
+            ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <tbody>
-                {/* Manuais */}
                 {varCosts.map(cost => (
                   <tr key={cost.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     <td style={{ padding: '11px 16px' }}>
@@ -287,63 +302,23 @@ export default function CostOfLivingPage() {
                   </tr>
                 ))}
 
-                {/* Cartão — automático */}
-                {data && data.variableItems.filter(i => i.source === 'card').map(item => (
-                  <tr key="card" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    <td style={{ padding: '11px 16px' }}>
-                      <p style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{item.name}</p>
-                      <span style={{ fontSize: 11, color: 'var(--brand)' }}>
-                        Automático — {data.cardLabel}
-                      </span>
-                    </td>
-                    <td style={{ padding: '11px 16px', textAlign: 'right',
-                                 fontFamily: 'DM Mono, monospace', fontWeight: 600,
-                                 color: 'var(--warning)', fontSize: 13, whiteSpace: 'nowrap' }}>
-                      {fmt(item.amount)}
-                    </td>
-                    <td style={{ padding: '11px 12px', width: 72 }}>
-                      <a href="/dashboard/credit-card"
-                        style={{ fontSize: 11, color: 'var(--brand)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                        Detalhar →
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-
-                {/* VA — automático */}
-                {data && data.variableItems.filter(i => i.source === 'va').map(item => (
-                  <tr key="va" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    <td style={{ padding: '11px 16px' }}>
-                      <p style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{item.name}</p>
-                      <span style={{ fontSize: 11, color: '#F97316' }}>
-                        Automático — {data.cardLabel}
-                      </span>
-                    </td>
-                    <td style={{ padding: '11px 16px', textAlign: 'right',
-                                 fontFamily: 'DM Mono, monospace', fontWeight: 600,
-                                 color: 'var(--warning)', fontSize: 13, whiteSpace: 'nowrap' }}>
-                      {fmt(item.amount)}
-                    </td>
-                    <td style={{ width: 72 }} />
-                  </tr>
-                ))}
-
                 {/* Total variável */}
                 {data && (
                   <tr style={{ background: 'var(--bg-elevated)' }}>
                     <td style={{ padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>
-                      {data.mode === 'month' ? 'Total variável (mês)' : 'Total variável/mês'}
+                      Total variável/mês
                     </td>
                     <td style={{ padding: '10px 16px', textAlign: 'right',
                                  fontFamily: 'DM Mono, monospace', fontWeight: 700,
                                  color: 'var(--warning)', fontSize: 15 }}>
-                      {fmt(data.variableTotal)}
+                      {fmt(varCosts.reduce((s, c) => s + Number(c.amount), 0))}
                     </td>
                     <td />
                   </tr>
                 )}
               </tbody>
             </table>
+            )}
           </div>
         </section>
 

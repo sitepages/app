@@ -20,7 +20,6 @@ export interface CostOfLivingData {
   variableItems:   { name: string; amount: number; source: string }[]
   byMonth:         { month: string; total: number; fixed: number; variable: number }[]
   highlightMonth:  string
-  cardLabel:       'média mensal' | 'total do mês'
 }
 
 function getPreviousMonths(n: number): string[] {
@@ -46,15 +45,7 @@ export function useCostOfLiving(
     const supabase    = createClient()
     const isMonthMode = !!specificMonth
 
-    // Month mode: 12-month chart, 1-month card. Average mode: period months for both.
     const chartMonths = isMonthMode ? getPreviousMonths(12) : getPreviousMonths(parseInt(period))
-    const cardMonths  = isMonthMode ? [specificMonth!] : chartMonths
-    const numMonths   = cardMonths.length
-
-    // Include specificMonth in fetch even if it falls outside the 12-month chart window
-    const fetchMonths = isMonthMode && !chartMonths.includes(specificMonth!)
-      ? [...chartMonths, specificMonth!]
-      : chartMonths
 
     const { data: fixedCosts } = await supabase
       .from('fixed_costs')
@@ -62,64 +53,26 @@ export function useCostOfLiving(
       .eq('household_id', householdId)
       .eq('is_active', true)
 
-    const { data: txs } = await supabase
-      .from('transactions')
-      .select('amount, competence_month')
-      .eq('household_id', householdId)
-      .eq('transaction_type', 'EXPENSE')
-      .is('deleted_at', null)
-      .in('competence_month', fetchMonths)
-
-    const { data: vaIncome } = await supabase
-      .from('income_entries')
-      .select('amount, competence_month')
-      .eq('household_id', householdId)
-      .eq('category', 'FOOD_CARD')
-      .in('competence_month', fetchMonths)
-
-    const cardByMonth: Record<string, number> = {}
-    fetchMonths.forEach(m => { cardByMonth[m] = 0 })
-    txs?.forEach(tx => {
-      if (cardByMonth[tx.competence_month] !== undefined)
-        cardByMonth[tx.competence_month] += Math.abs(Number(tx.amount))
-    })
-
-    const vaByMonth: Record<string, number> = {}
-    fetchMonths.forEach(m => { vaByMonth[m] = 0 })
-    vaIncome?.forEach(v => {
-      if (vaByMonth[v.competence_month] !== undefined)
-        vaByMonth[v.competence_month] += Number(v.amount)
-    })
-
     const manualFixed         = (fixedCosts ?? []).filter(c => c.type === 'FIXED')
     const manualVariable      = (fixedCosts ?? []).filter(c => c.type === 'VARIABLE')
     const fixedManualTotal    = manualFixed.reduce((s, c) => s + Number(c.amount), 0)
     const variableManualTotal = manualVariable.reduce((s, c) => s + Number(c.amount), 0)
 
-    const avgCard = cardMonths.reduce((s, m) => s + (cardByMonth[m] ?? 0), 0) / numMonths
-    const avgVA   = cardMonths.reduce((s, m) => s + (vaByMonth[m]  ?? 0), 0) / numMonths
-
     const fixedTotal    = fixedManualTotal
-    const variableTotal = variableManualTotal + avgCard + avgVA
+    const variableTotal = variableManualTotal
     const totalMonthly  = fixedTotal + variableTotal
 
     const fixedItems = manualFixed
       .map(c => ({ name: c.name, amount: Number(c.amount), source: 'manual' }))
       .sort((a, b) => b.amount - a.amount)
 
-    const variableItems = [
-      ...manualVariable.map(c => ({ name: c.name, amount: Number(c.amount), source: 'manual' })),
-      ...(avgCard > 0 ? [{ name: 'Cartão de crédito', amount: avgCard, source: 'card' }] : []),
-      ...(avgVA   > 0 ? [{ name: 'Vale Alimentação',  amount: avgVA,   source: 'va'   }] : []),
-    ].sort((a, b) => b.amount - a.amount)
+    const variableItems = manualVariable
+      .map(c => ({ name: c.name, amount: Number(c.amount), source: 'manual' }))
+      .sort((a, b) => b.amount - a.amount)
 
-    // Chart uses chartMonths only (not the extra specificMonth if outside range)
-    const byMonth = chartMonths.map(m => {
-      const cardAmt  = cardByMonth[m] ?? 0
-      const vaAmt    = vaByMonth[m]   ?? 0
-      const variable = variableManualTotal + cardAmt + vaAmt
-      return { month: m, total: fixedManualTotal + variable, fixed: fixedManualTotal, variable }
-    })
+    const byMonth = chartMonths.map(m => ({
+      month: m, total: totalMonthly, fixed: fixedManualTotal, variable: variableManualTotal,
+    }))
 
     setData({
       mode:            isMonthMode ? 'month' : 'average',
@@ -136,7 +89,6 @@ export function useCostOfLiving(
       variableItems,
       byMonth,
       highlightMonth:  isMonthMode ? specificMonth! : chartMonths[chartMonths.length - 1],
-      cardLabel:       isMonthMode ? 'total do mês' : 'média mensal',
     })
     setLoading(false)
   }, [householdId, period, specificMonth])

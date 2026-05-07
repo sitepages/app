@@ -194,9 +194,10 @@ export default function InstallmentsPage() {
             />
           ))}
         </div>
+      )}
 
-        {/* Parcelas concluídas */}
-        {completedPlans.length > 0 && (
+      {/* Parcelas concluídas */}
+      {!loading && completedPlans.length > 0 && (
           <div className="mt-6">
             <button
               onClick={() => setShowCompleted(v => !v)}
@@ -227,7 +228,6 @@ export default function InstallmentsPage() {
             )}
           </div>
         )}
-      )}
 
       {showForm && (
         <InstallmentForm categories={categories} accounts={accounts}

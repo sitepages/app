@@ -85,7 +85,7 @@ export default function AccountsPage() {
 
               <div className="space-y-2">
                 {groupAccounts.map(account => (
-                  <div key={account.id} className="card" style={{ overflow: 'hidden' }}>
+                  <div key={account.id} className="card">
                   <div className="px-5 py-4 flex items-center gap-4">
 
                     {/* Ícone */}

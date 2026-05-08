@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useHideValues } from '@/hooks/useHideValues'
+import { createClient } from '@/services/supabase/client'
 import { useAccounts, ACCOUNT_TYPES } from '@/hooks/useAccounts'
+import { INCOME_CATEGORIES } from '@/hooks/useIncome'
 import { useHouseholdMembers }        from '@/hooks/useHouseholdMembers'
 import {
   Wallet, Plus, Pencil, EyeOff, TrendingUp,
@@ -22,9 +24,10 @@ export default function AccountsPage() {
   const { hidden } = useHideValues()
   const { accounts, loading, summary, createAccount, updateAccount, updateBalance, deactivateAccount } = useAccounts(HOUSEHOLD_ID)
   const { members } = useHouseholdMembers(HOUSEHOLD_ID)
-  const [showForm, setShowForm]       = useState(false)
-  const [editingId, setEditingId]     = useState<string | null>(null)
-  const [editBalance, setEditBalance] = useState<{ id: string; value: string } | null>(null)
+  const [showForm, setShowForm]           = useState(false)
+  const [editingId, setEditingId]         = useState<string | null>(null)
+  const [editBalance, setEditBalance]     = useState<{ id: string; value: string } | null>(null)
+  const [expandedAccountId, setExpandedAccountId] = useState<string | null>(null)
 
   // Agrupa contas por tipo
   const groups = Object.entries(ACCOUNT_TYPES).map(([type, meta]) => ({
@@ -82,7 +85,8 @@ export default function AccountsPage() {
 
               <div className="space-y-2">
                 {groupAccounts.map(account => (
-                  <div key={account.id} className="card px-5 py-4 flex items-center gap-4">
+                  <div key={account.id} className="card" style={{ overflow: 'hidden' }}>
+                  <div className="px-5 py-4 flex items-center gap-4">
 
                     {/* Ícone */}
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -152,6 +156,20 @@ export default function AccountsPage() {
                       </button>
                     )}
 
+                    {/* Histórico de rendas */}
+                    <button
+                      onClick={() => setExpandedAccountId(expandedAccountId === account.id ? null : account.id)}
+                      title="Histórico de rendas"
+                      style={{
+                        background: 'transparent', border: 'none', cursor: 'pointer',
+                        color: expandedAccountId === account.id ? 'var(--brand)' : 'var(--text-muted)',
+                        padding: '4px 6px', borderRadius: 6, display: 'flex', alignItems: 'center',
+                        transition: 'color 0.15s',
+                      }}
+                    >
+                      <TrendingUp size={14} />
+                    </button>
+
                     {/* Menu */}
                     <AccountMenu
                       account={account}
@@ -159,6 +177,10 @@ export default function AccountsPage() {
                       onDeactivate={() => deactivateAccount(account.id)}
                       onUpdateBalance={() => setEditBalance({ id: account.id, value: String(account.balance) })}
                     />
+                  </div>
+                  {expandedAccountId === account.id && (
+                    <AccountIncomeHistory accountId={account.id} hidden={hidden} />
+                  )}
                   </div>
                 ))}
               </div>
@@ -408,6 +430,80 @@ function AccountForm({ members, account, onSave, onClose }: {
           </div>
         </form>
       </div>
+    </div>
+  )
+}
+
+// ── Account Income History ────────────────────────────────────────
+function AccountIncomeHistory({ accountId, hidden }: { accountId: string; hidden: boolean }) {
+  const [entries, setEntries] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase
+      .from('income_entries')
+      .select('id, amount, description, category, date')
+      .eq('account_id', accountId)
+      .order('date', { ascending: false })
+      .limit(30)
+      .then(({ data }) => {
+        setEntries(data ?? [])
+        setLoading(false)
+      })
+  }, [accountId])
+
+  return (
+    <div style={{ borderTop: '1px solid var(--border)', padding: '14px 20px' }}>
+      <p style={{
+        fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
+        letterSpacing: '0.07em', color: 'var(--text-muted)', marginBottom: 10,
+      }}>
+        Rendas vinculadas
+      </p>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '8px 0' }}>
+          <div className="w-4 h-4 rounded-full border-2 animate-spin mx-auto"
+            style={{ borderColor: 'var(--brand)', borderTopColor: 'transparent' }} />
+        </div>
+      ) : entries.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', padding: '4px 0' }}>
+          Nenhuma renda registrada nesta conta
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {entries.map(entry => {
+            const cat = INCOME_CATEGORIES[entry.category as keyof typeof INCOME_CATEGORIES]
+            return (
+              <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+                <span style={{
+                  padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 500,
+                  background: cat?.bg ?? 'var(--bg-elevated)',
+                  color: cat?.color ?? 'var(--text-muted)',
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  {cat?.label ?? entry.category}
+                </span>
+                <span style={{
+                  flex: 1, color: 'var(--text)',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {entry.description}
+                </span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  {formatDate(entry.date)}
+                </span>
+                <span style={{
+                  fontFamily: 'DM Mono, monospace', color: 'var(--brand)',
+                  fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  {hidden ? '••••••' : formatCurrency(Number(entry.amount))}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

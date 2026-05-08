@@ -53,7 +53,15 @@ export function useAccounts(householdId: string) {
     setLoading(false)
   }, [householdId])
 
-  useEffect(() => { fetchAccounts() }, [fetchAccounts])
+  useEffect(() => {
+    fetchAccounts()
+    const supabase = createClient()
+    const sub = supabase
+      .channel('accounts-balance')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts' }, fetchAccounts)
+      .subscribe()
+    return () => { supabase.removeChannel(sub) }
+  }, [fetchAccounts])
 
   const summary: AccountSummary = {
     disponivel: accounts

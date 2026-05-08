@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useHideValues } from '@/hooks/useHideValues'
 import { useBudgets }    from '@/hooks/useBudgets'
 import { useCategories } from '@/hooks/useCategories'
 import { Plus, X, Copy, Trash2, AlertTriangle, CheckCircle, AlertCircle, Calendar } from 'lucide-react'
@@ -24,6 +25,8 @@ export default function BudgetPage() {
   const [copying, setCopying]   = useState(false)
   const [copyMsg, setCopyMsg]   = useState<string | null>(null)
 
+  const { hidden } = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : formatCurrency(v)
   const { budgets, loading, totalLimit, totalSpent, exceeded, warning,
           upsertBudget, deleteBudget, copyFromPrevMonth } = useBudgets(HOUSEHOLD_ID, month)
   const { categories } = useCategories()
@@ -87,7 +90,7 @@ export default function BudgetPage() {
           ].map(c => (
             <div key={c.label} className="stat-card">
               <p className="stat-label">{c.label}</p>
-              <p className="stat-value" style={{ color: c.color }}>{formatCurrency(c.value)}</p>
+              <p className="stat-value" style={{ color: c.color }}>{h(c.value)}</p>
             </div>
           ))}
           <div className="stat-card">
@@ -143,7 +146,7 @@ export default function BudgetPage() {
       ) : (
         <div className="space-y-3 animate-fade-up-2">
           {budgets.map(budget => (
-            <BudgetRow key={budget.id} budget={budget}
+            <BudgetRow key={budget.id} budget={budget} hidden={hidden}
               onDelete={() => deleteBudget(budget.id)}
               onEdit={newLimit => upsertBudget(budget.category_id, newLimit)} />
           ))}
@@ -159,7 +162,8 @@ export default function BudgetPage() {
   )
 }
 
-function BudgetRow({ budget, onDelete, onEdit }: { budget: any; onDelete: () => void; onEdit: (v: number) => Promise<void> }) {
+function BudgetRow({ budget, onDelete, onEdit, hidden }: { budget: any; onDelete: () => void; onEdit: (v: number) => Promise<void>; hidden: boolean }) {
+  const h = (v: number) => hidden ? '••••••' : formatCurrency(v)
   const [editing, setEditing] = useState(false)
   const [value, setValue]     = useState(String(budget.amount_limit))
 
@@ -186,7 +190,7 @@ function BudgetRow({ budget, onDelete, onEdit }: { budget: any; onDelete: () => 
           </div>
           <div className="flex items-center gap-4">
             <span style={{ fontSize: 12, color: statusColor, fontFamily: 'DM Mono, monospace', fontWeight: 600 }}>
-              {formatCurrency(budget.spent)}
+              {h(budget.spent)}
             </span>
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>de</span>
             {editing ? (
@@ -207,13 +211,13 @@ function BudgetRow({ budget, onDelete, onEdit }: { budget: any; onDelete: () => 
               <button onClick={() => { setValue(String(budget.amount_limit)); setEditing(true) }}
                 style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'DM Mono, monospace',
                          background: 'transparent', border: 'none', cursor: 'pointer', textDecoration: 'underline dotted' }}>
-                {formatCurrency(Number(budget.amount_limit))}
+                {h(Number(budget.amount_limit))}
               </button>
             )}
             <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 'auto' }}>
               {budget.remaining >= 0
-                ? <span style={{ color: 'var(--success)' }}>Resta {formatCurrency(budget.remaining)}</span>
-                : <span style={{ color: 'var(--danger)' }}>Excedeu {formatCurrency(Math.abs(budget.remaining))}</span>}
+                ? <span style={{ color: 'var(--success)' }}>Resta {h(budget.remaining)}</span>
+                : <span style={{ color: 'var(--danger)' }}>Excedeu {h(Math.abs(budget.remaining))}</span>}
             </span>
             <span style={{ fontSize: 12, fontWeight: 600, color: statusColor, fontFamily: 'DM Mono, monospace' }}>
               {Math.round(budget.percent)}%

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useHideValues } from '@/hooks/useHideValues'
 import { createClient }        from '@/services/supabase/client'
 import { useTransactions }     from '@/hooks/useTransactions'
 import { useCategories }       from '@/hooks/useCategories'
@@ -26,6 +27,8 @@ export default function TransactionsPage() {
   const [categoryId, setCategoryId] = useState('')
   const [typeFilter, setType]       = useState('')
 
+  const { hidden } = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : formatCurrency(v)
   const { transactions, loading, error, refetch } = useTransactions(HOUSEHOLD_ID, {
     month,
     category_id: categoryId || undefined,
@@ -63,7 +66,7 @@ export default function TransactionsPage() {
               <TrendingDown size={13} />
             </span>
           </div>
-          <p className="stat-value" style={{ color: 'var(--danger)' }}>{formatCurrency(totalExp)}</p>
+          <p className="stat-value" style={{ color: 'var(--danger)' }}>{h(totalExp)}</p>
           <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 6 }}>{expenses.length} transações</p>
         </div>
 
@@ -75,7 +78,7 @@ export default function TransactionsPage() {
               <TrendingUp size={13} />
             </span>
           </div>
-          <p className="stat-value" style={{ color: 'var(--success)' }}>{formatCurrency(totalInc)}</p>
+          <p className="stat-value" style={{ color: 'var(--success)' }}>{h(totalInc)}</p>
           <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 6 }}>{incomes.length} transações</p>
         </div>
 
@@ -88,7 +91,7 @@ export default function TransactionsPage() {
             </span>
           </div>
           <p className="stat-value" style={{ color: totalInc - totalExp >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-            {totalInc - totalExp >= 0 ? '+' : '-'}{formatCurrency(totalInc - totalExp)}
+            {hidden ? '••••••' : `${totalInc - totalExp >= 0 ? '+' : '-'}${formatCurrency(totalInc - totalExp)}`}
           </p>
           <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 6 }}>{transactions.length} total</p>
         </div>
@@ -198,7 +201,7 @@ export default function TransactionsPage() {
                     fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap',
                     color: tx.transaction_type === 'EXPENSE' ? 'var(--danger)' : 'var(--success)',
                   }}>
-                    {tx.transaction_type === 'EXPENSE' ? '-' : '+'}{formatCurrency(tx.amount)}
+                    {hidden ? '••••••' : `${tx.transaction_type === 'EXPENSE' ? '-' : '+'}${formatCurrency(tx.amount)}`}
                   </td>
                   <td style={{ padding: '8px', width: 44 }}>
                     <RowMenu txId={tx.id} onDone={refetch} />

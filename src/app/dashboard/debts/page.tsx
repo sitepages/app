@@ -7,6 +7,7 @@ import {
   Plus, X, TrendingDown, Wallet, Calendar,
   ChevronDown, ChevronUp, Trash2, Pencil, DollarSign,
 } from 'lucide-react'
+import { useHideValues } from '@/hooks/useHideValues'
 
 const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 
@@ -29,6 +30,8 @@ export default function DebtsPage() {
   const [paying, setPaying]       = useState<any>(null)
   const [viewingId, setViewingId] = useState<string | null>(null)
   const [payments, setPayments]   = useState<any[]>([])
+  const { hidden }                = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : fmt(v)
 
   const activeDebts = debts.filter(d => d.status === 'ACTIVE' || d.status === 'DEFAULTED')
   const otherDebts  = debts.filter(d => d.status === 'PAID' || d.status === 'RENEGOTIATED')
@@ -64,7 +67,7 @@ export default function DebtsPage() {
               <TrendingDown size={13} />
             </span>
           </div>
-          <p className="stat-value" style={{ color: 'var(--danger)' }}>{fmt(totalBalance)}</p>
+          <p className="stat-value" style={{ color: 'var(--danger)' }}>{h(totalBalance)}</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             {activeDebts.length} dívida{activeDebts.length !== 1 ? 's' : ''} ativa{activeDebts.length !== 1 ? 's' : ''}
           </p>
@@ -78,7 +81,7 @@ export default function DebtsPage() {
               <Wallet size={13} />
             </span>
           </div>
-          <p className="stat-value" style={{ color: 'var(--info)' }}>{fmt(totalOriginal)}</p>
+          <p className="stat-value" style={{ color: 'var(--info)' }}>{h(totalOriginal)}</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>valor total contraído</p>
         </div>
 
@@ -90,7 +93,7 @@ export default function DebtsPage() {
               <DollarSign size={13} />
             </span>
           </div>
-          <p className="stat-value" style={{ color: 'var(--success)' }}>{fmt(totalPaid)}</p>
+          <p className="stat-value" style={{ color: 'var(--success)' }}>{h(totalPaid)}</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>em todos os registros</p>
         </div>
 
@@ -105,7 +108,7 @@ export default function DebtsPage() {
           {nextPayment ? (
             <>
               <p className="stat-value" style={{ color: 'var(--warning)', fontSize: 20 }}>
-                {fmt(Number(nextPayment.payment_amount ?? 0))}
+                {h(Number(nextPayment.payment_amount ?? 0))}
               </p>
               <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
                 {fmtDate(nextPayment.next_payment_date ?? '')} · {nextPayment.creditor_name}
@@ -149,6 +152,7 @@ export default function DebtsPage() {
               <div className="space-y-3">
                 {activeDebts.map(debt => (
                   <DebtCard key={debt.id} debt={debt}
+                    hidden={hidden}
                     onEdit={() => setEditing(debt)}
                     onPay={() => setPaying(debt)}
                     onViewPayments={() => handleViewPayments(debt.id)}
@@ -167,6 +171,7 @@ export default function DebtsPage() {
               <div className="space-y-3">
                 {otherDebts.map(debt => (
                   <DebtCard key={debt.id} debt={debt}
+                    hidden={hidden}
                     onEdit={() => setEditing(debt)}
                     onPay={() => setPaying(debt)}
                     onViewPayments={() => handleViewPayments(debt.id)}
@@ -191,7 +196,7 @@ export default function DebtsPage() {
       )}
 
       {paying && (
-        <PaymentForm debt={paying} accounts={accounts}
+        <PaymentForm debt={paying} accounts={accounts} hidden={hidden}
           onSave={async data => { await registerPayment(paying.id, data); setPaying(null) }}
           onClose={() => setPaying(null)} />
       )}
@@ -200,10 +205,10 @@ export default function DebtsPage() {
 }
 
 // ── Card de dívida ────────────────────────────────────────────────
-function DebtCard({ debt, onEdit, onPay, onViewPayments, showingPayments, payments, onUpdateStatus }: {
+function DebtCard({ debt, onEdit, onPay, onViewPayments, showingPayments, payments, onUpdateStatus, hidden }: {
   debt: any; onEdit: () => void; onPay: () => void
   onViewPayments: () => void; showingPayments: boolean
-  payments: any[]; onUpdateStatus: (s: string) => void
+  payments: any[]; onUpdateStatus: (s: string) => void; hidden: boolean
 }) {
   const status    = DEBT_STATUS[debt.status as keyof typeof DEBT_STATUS]
   const interest  = INTEREST_TYPES[debt.interest_type as keyof typeof INTEREST_TYPES]
@@ -242,26 +247,26 @@ function DebtCard({ debt, onEdit, onPay, onViewPayments, showingPayments, paymen
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 Saldo:{' '}
                 <span style={{ color: 'var(--danger)', fontFamily: 'DM Mono, monospace', fontWeight: 600 }}>
-                  {fmt(Number(debt.current_balance))}
+                  {hidden ? '••••••' : fmt(Number(debt.current_balance))}
                 </span>
               </span>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 Original:{' '}
                 <span style={{ fontFamily: 'DM Mono, monospace', color: 'var(--text-secondary)' }}>
-                  {fmt(Number(debt.original_amount))}
+                  {hidden ? '••••••' : fmt(Number(debt.original_amount))}
                 </span>
               </span>
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                 Pago:{' '}
                 <span style={{ color: 'var(--success)', fontFamily: 'DM Mono, monospace' }}>
-                  {fmt(debt.total_paid)} ({debt.percent_paid}%)
+                  {hidden ? '••••••' : fmt(debt.total_paid)} ({debt.percent_paid}%)
                 </span>
               </span>
               {debt.payment_amount && (
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   Parcela:{' '}
                   <span style={{ fontFamily: 'DM Mono, monospace', color: 'var(--warning)', fontWeight: 600 }}>
-                    {fmt(Number(debt.payment_amount))}/mês
+                    {hidden ? '••••••' : fmt(Number(debt.payment_amount))}/mês
                   </span>
                 </span>
               )}
@@ -336,17 +341,17 @@ function DebtCard({ debt, onEdit, onPay, onViewPayments, showingPayments, paymen
                       {fmtDate(p.payment_date)}
                     </td>
                     <td style={{ padding: '8px 16px', fontSize: 12, textAlign: 'right', color: 'var(--success)', fontFamily: 'DM Mono, monospace', fontWeight: 600 }}>
-                      {fmt(Number(p.amount_paid))}
+                      {hidden ? '••••••' : fmt(Number(p.amount_paid))}
                     </td>
                     <td style={{ padding: '8px 16px', fontSize: 12, textAlign: 'right', color: 'var(--text-secondary)', fontFamily: 'DM Mono, monospace' }}>
-                      {fmt(Number(p.principal_paid))}
+                      {hidden ? '••••••' : fmt(Number(p.principal_paid))}
                     </td>
                     <td style={{ padding: '8px 16px', fontSize: 12, textAlign: 'right', fontFamily: 'DM Mono, monospace',
                                  color: Number(p.interest_paid) > 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
-                      {fmt(Number(p.interest_paid))}
+                      {hidden ? '••••••' : fmt(Number(p.interest_paid))}
                     </td>
                     <td style={{ padding: '8px 16px', fontSize: 12, textAlign: 'right', color: 'var(--text)', fontFamily: 'DM Mono, monospace' }}>
-                      {fmt(Number(p.balance_after))}
+                      {hidden ? '••••••' : fmt(Number(p.balance_after))}
                     </td>
                   </tr>
                 ))}
@@ -506,9 +511,9 @@ function DebtForm({ accounts, debt, onSave, onClose }: {
 }
 
 // ── Formulário de pagamento ───────────────────────────────────────
-function PaymentForm({ debt, accounts, onSave, onClose }: {
+function PaymentForm({ debt, accounts, onSave, onClose, hidden }: {
   debt: any; accounts: any[]
-  onSave: (data: any) => Promise<void>; onClose: () => void
+  onSave: (data: any) => Promise<void>; onClose: () => void; hidden: boolean
 }) {
   const today = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({
@@ -542,7 +547,7 @@ function PaymentForm({ debt, accounts, onSave, onClose }: {
   return (
     <Modal title="Registrar pagamento" onClose={onClose}
       subtitle={`${debt.description} — saldo atual: `}
-      subtitleValue={fmt(Number(debt.current_balance))}>
+      subtitleValue={hidden ? '••••••' : fmt(Number(debt.current_balance))}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Data do pagamento">

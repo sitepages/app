@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useGoals, SavingsGoal } from '@/hooks/useGoals'
 import { Target, Plus, X, Check, Pencil, Trash2, TrendingUp, Calendar, PiggyBank } from 'lucide-react'
+import { useHideValues } from '@/hooks/useHideValues'
 
 const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
@@ -22,6 +23,8 @@ export default function GoalsPage() {
   const [showForm, setShowForm]         = useState(false)
   const [editGoal, setEditGoal]         = useState<SavingsGoal | null>(null)
   const [progressGoal, setProgressGoal] = useState<SavingsGoal | null>(null)
+  const { hidden }                      = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : fmt(v)
 
   const activeGoals    = goals.filter(g => !g.is_completed)
   const completedGoals = goals.filter(g => g.is_completed)
@@ -63,9 +66,9 @@ export default function GoalsPage() {
                 <Target size={13} />
               </span>
             </div>
-            <p className="stat-value">{fmt(totalTarget - totalSaved)}</p>
+            <p className="stat-value">{h(totalTarget - totalSaved)}</p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-              {fmt(totalSaved)} guardados de {fmt(totalTarget)}
+              {h(totalSaved)} guardados de {h(totalTarget)}
             </p>
           </div>
           <div className="stat-card">
@@ -76,7 +79,7 @@ export default function GoalsPage() {
                 <TrendingUp size={13} />
               </span>
             </div>
-            <p className="stat-value" style={{ color: 'var(--success)' }}>{fmt(totalMonthly)}</p>
+            <p className="stat-value" style={{ color: 'var(--success)' }}>{h(totalMonthly)}</p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
               soma de todas as metas ativas
             </p>
@@ -121,6 +124,7 @@ export default function GoalsPage() {
             <GoalCard
               key={goal.id}
               goal={goal}
+              hidden={hidden}
               progress={getProgress(goal)}
               monthsLeft={getMonthsLeft(goal.target_date)}
               monthlySavings={getMonthlySavings(goal)}
@@ -149,7 +153,7 @@ export default function GoalsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm" style={{ color: 'var(--text)' }}>{goal.name}</p>
                       <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                        {fmt(goal.target_amount)} · {goal.target_date ? fmtDate(goal.target_date) : 'sem prazo'}
+                        {h(goal.target_amount)} · {goal.target_date ? fmtDate(goal.target_date) : 'sem prazo'}
                       </p>
                     </div>
                     <button onClick={() => updateGoal(goal.id, { is_completed: false })}
@@ -185,6 +189,7 @@ export default function GoalsPage() {
       {progressGoal && (
         <ProgressModal
           goal={progressGoal}
+          hidden={hidden}
           onSave={async (amount) => {
             await addProgress(progressGoal.id, amount)
             setProgressGoal(null)
@@ -197,9 +202,9 @@ export default function GoalsPage() {
 }
 
 // ── Card de meta ──────────────────────────────────────────────────
-function GoalCard({ goal, progress, monthsLeft, monthlySavings, onEdit, onDelete, onAddProgress, onComplete }: {
+function GoalCard({ goal, progress, monthsLeft, monthlySavings, onEdit, onDelete, onAddProgress, onComplete, hidden }: {
   goal: SavingsGoal; progress: number; monthsLeft: number | null; monthlySavings: number | null
-  onEdit: () => void; onDelete: () => void; onAddProgress: () => void; onComplete: () => void
+  onEdit: () => void; onDelete: () => void; onAddProgress: () => void; onComplete: () => void; hidden: boolean
 }) {
   const remaining = goal.target_amount - goal.current_amount
   const color = goal.notes?.startsWith('#') ? goal.notes : GOAL_COLORS[0]
@@ -257,19 +262,19 @@ function GoalCard({ goal, progress, monthsLeft, monthlySavings, onEdit, onDelete
               <div>
                 <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Guardado</p>
                 <p style={{ fontSize: 14, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: displayColor }}>
-                  {fmt(goal.current_amount)}
+                  {hidden ? '••••••' : fmt(goal.current_amount)}
                 </p>
               </div>
               <div>
                 <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Falta</p>
                 <p style={{ fontSize: 14, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: 'var(--text)' }}>
-                  {fmt(remaining)}
+                  {hidden ? '••••••' : fmt(remaining)}
                 </p>
               </div>
               <div>
                 <p style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meta</p>
                 <p style={{ fontSize: 14, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                  {fmt(goal.target_amount)}
+                  {hidden ? '••••••' : fmt(goal.target_amount)}
                 </p>
               </div>
               {monthlySavings !== null && (
@@ -278,7 +283,7 @@ function GoalCard({ goal, progress, monthsLeft, monthlySavings, onEdit, onDelete
                     Guardar/mês
                   </p>
                   <p style={{ fontSize: 14, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: 'var(--success)' }}>
-                    {fmt(monthlySavings)}
+                    {hidden ? '••••••' : fmt(monthlySavings)}
                   </p>
                 </div>
               )}
@@ -451,8 +456,8 @@ function GoalForm({ initial, onSave, onClose }: {
 }
 
 // ── Modal de depósito ─────────────────────────────────────────────
-function ProgressModal({ goal, onSave, onClose }: {
-  goal: SavingsGoal; onSave: (amount: number) => Promise<void>; onClose: () => void
+function ProgressModal({ goal, onSave, onClose, hidden }: {
+  goal: SavingsGoal; onSave: (amount: number) => Promise<void>; onClose: () => void; hidden: boolean
 }) {
   const [amount, setAmount] = useState('')
   const [saving, setSaving] = useState(false)
@@ -484,7 +489,7 @@ function ProgressModal({ goal, onSave, onClose }: {
         <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
           <p className="font-semibold text-sm mb-1" style={{ color: 'var(--text)' }}>{goal.name}</p>
           <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-            {fmt(goal.current_amount)} de {fmt(goal.target_amount)} · falta {fmt(remaining)}
+            {hidden ? '••••••' : fmt(goal.current_amount)} de {hidden ? '••••••' : fmt(goal.target_amount)} · falta {hidden ? '••••••' : fmt(remaining)}
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">

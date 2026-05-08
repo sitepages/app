@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useHideValues } from '@/hooks/useHideValues'
 import { useAccounts, ACCOUNT_TYPES } from '@/hooks/useAccounts'
 import { useHouseholdMembers }        from '@/hooks/useHouseholdMembers'
 import {
@@ -18,6 +19,7 @@ function formatDate(iso: string) {
 }
 
 export default function AccountsPage() {
+  const { hidden } = useHideValues()
   const { accounts, loading, summary, createAccount, updateAccount, updateBalance, deactivateAccount } = useAccounts(HOUSEHOLD_ID)
   const { members } = useHouseholdMembers(HOUSEHOLD_ID)
   const [showForm, setShowForm]       = useState(false)
@@ -47,12 +49,12 @@ export default function AccountsPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 animate-fade-up-1">
         <SummaryCard label="Disponível" value={summary.disponivel}
-          sub="Conta corrente + VA" color="var(--success)" />
+          sub="Conta corrente + VA" color="var(--success)" hidden={hidden} />
         <SummaryCard label="Investido"  value={summary.investido}
-          sub="Poupança + CDI + Invest." color="var(--info)" />
+          sub="Poupança + CDI + Invest." color="var(--info)" hidden={hidden} />
         <SummaryCard label="Total"      value={summary.total}
           sub="Patrimônio completo" color="var(--brand)"
-          highlight />
+          highlight hidden={hidden} />
       </div>
 
       {/* Lista de contas */}
@@ -74,7 +76,7 @@ export default function AccountsPage() {
                   {meta.label}
                 </p>
                 <span className="text-xs font-mono ml-auto" style={{ color: meta.color }}>
-                  {formatCurrency(groupAccounts.reduce((s, a) => s + Number(a.balance), 0))}
+                  {hidden ? '••••••' : formatCurrency(groupAccounts.reduce((s, a) => s + Number(a.balance), 0))}
                 </span>
               </div>
 
@@ -142,7 +144,7 @@ export default function AccountsPage() {
                       >
                         <span className="font-mono font-semibold text-base"
                           style={{ color: Number(account.balance) >= 0 ? 'var(--text)' : 'var(--danger)' }}>
-                          {formatCurrency(Number(account.balance))}
+                          {hidden ? '••••••' : formatCurrency(Number(account.balance))}
                         </span>
                         <RefreshCw size={12}
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
@@ -194,14 +196,14 @@ export default function AccountsPage() {
 }
 
 // ── Summary Card ─────────────────────────────────────────────────
-function SummaryCard({ label, value, sub, color, highlight }: {
+function SummaryCard({ label, value, sub, color, highlight, hidden }: {
   label: string; value: number; sub: string
-  color: string; highlight?: boolean
+  color: string; highlight?: boolean; hidden: boolean
 }) {
   return (
     <div className="stat-card" style={highlight ? { borderColor: 'var(--brand-border)' } : {}}>
       <p className="stat-label">{label}</p>
-      <p className="stat-value" style={{ color }}>{formatCurrency(value)}</p>
+      <p className="stat-value" style={{ color }}>{hidden ? '••••••' : formatCurrency(value)}</p>
       <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>{sub}</p>
     </div>
   )

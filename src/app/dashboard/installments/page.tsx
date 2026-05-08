@@ -8,6 +8,7 @@ import {
   Lock, Plus, X, Trash2, CheckCircle,
   ChevronUp, ChevronDown, TrendingDown, Pencil, RotateCcw,
 } from 'lucide-react'
+import { useHideValues } from '@/hooks/useHideValues'
 
 const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 
@@ -31,6 +32,8 @@ export default function InstallmentsPage() {
   const [expandedId, setExpandedId]     = useState<string | null>(null)
   const [payments, setPayments]         = useState<any[]>([])
   const [loadingPay, setLoadingPay]     = useState(false)
+  const { hidden }                      = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : fmt(v)
 
   const projection     = getMonthlyProjection()
 
@@ -69,7 +72,7 @@ export default function InstallmentsPage() {
               <Lock size={13} />
             </span>
           </div>
-          <p className="stat-value" style={{ color: 'var(--danger)' }}>{fmt(totalCommitted)}</p>
+          <p className="stat-value" style={{ color: 'var(--danger)' }}>{h(totalCommitted)}</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             {plans.length} {plans.length === 1 ? 'parcela ativa' : 'parcelas ativas'}
           </p>
@@ -84,7 +87,7 @@ export default function InstallmentsPage() {
             </span>
           </div>
           <p className="stat-value" style={{ color: 'var(--warning)' }}>
-            {fmt(projection[0]?.total ?? 0)}
+            {h(projection[0]?.total ?? 0)}
           </p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             {projection[0]?.month ? monthLabel(projection[0].month) : '—'}
@@ -128,7 +131,7 @@ export default function InstallmentsPage() {
                     fontWeight: isHighest ? 600 : 400,
                     whiteSpace: 'nowrap',
                   }}>
-                    {fmt(p.total)}
+                    {hidden ? '•••' : fmt(p.total)}
                   </span>
 
                   {/* Barra */}
@@ -182,7 +185,7 @@ export default function InstallmentsPage() {
       ) : (
         <div className="space-y-3 animate-fade-up-3">
           {plans.map(plan => (
-            <InstallmentCard key={plan.id} plan={plan}
+            <InstallmentCard key={plan.id} plan={plan} hidden={hidden}
               onUpdateCurrent={n => updateInstallment(plan.id, n)}
               onClose={() => { if (confirm('Marcar como concluída?')) closePlan(plan.id) }}
               onEdit={() => { setEditing(plan); setShowForm(true) }}
@@ -211,7 +214,7 @@ export default function InstallmentsPage() {
             {showCompleted && (
               <div className="space-y-3">
                 {completedPlans.map(plan => (
-                  <InstallmentCard key={plan.id} plan={plan}
+                  <InstallmentCard key={plan.id} plan={plan} hidden={hidden}
                     completed
                     onUpdateCurrent={n => updateInstallment(plan.id, n)}
                     onClose={() => {}}
@@ -249,16 +252,17 @@ export default function InstallmentsPage() {
 
 // ── Card de parcela ───────────────────────────────────────────────
 function InstallmentCard({ plan, onUpdateCurrent, onClose, onDelete, onEdit,
-  onReactivate, onExpandPayments, isExpanded, payments, loadingPayments, completed }: {
+  onReactivate, onExpandPayments, isExpanded, payments, loadingPayments, completed, hidden }: {
   plan: any; onUpdateCurrent: (n: number) => Promise<void>
   onClose: () => void; onDelete: () => void; onEdit: () => void
   onReactivate?: () => void
   onExpandPayments: () => void; isExpanded: boolean
-  payments: any[]; loadingPayments: boolean; completed?: boolean
+  payments: any[]; loadingPayments: boolean; completed?: boolean; hidden: boolean
 }) {
   const [updating, setUpdating] = useState(false)
   const isAlmostDone = plan.remaining_installments <= 2
   const fmt = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+  const h = (v: number) => hidden ? '••••••' : fmt(v)
   const fmtDate = (iso: string) => { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}` }
 
   async function handleStep(dir: 1 | -1) {
@@ -320,20 +324,20 @@ function InstallmentCard({ plan, onUpdateCurrent, onClose, onDelete, onEdit,
             </span>
 
             <span style={{ fontSize: 12, fontFamily: 'DM Mono, monospace', color: 'var(--warning)', fontWeight: 600 }}>
-              {fmt(Number(plan.installment_amount))}/mês
+              {h(Number(plan.installment_amount))}/mês
             </span>
 
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               Comprometido:{' '}
               <span style={{ color: 'var(--danger)', fontFamily: 'DM Mono, monospace', fontWeight: 600 }}>
-                {fmt(plan.committed_value)}
+                {h(plan.committed_value)}
               </span>
             </span>
 
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               Total:{' '}
               <span style={{ fontFamily: 'DM Mono, monospace', color: 'var(--text-secondary)' }}>
-                {fmt(Number(plan.total_amount))}
+                {h(Number(plan.total_amount))}
               </span>
             </span>
           </div>
@@ -410,7 +414,7 @@ function InstallmentCard({ plan, onUpdateCurrent, onClose, onDelete, onEdit,
                     {pay ? (
                       <>
                         <p style={{ fontSize: 10 }}>{fmtDate(pay.payment_date)}</p>
-                        <p style={{ fontSize: 10, fontFamily: 'DM Mono, monospace' }}>{fmt(Number(pay.amount))}</p>
+                        <p style={{ fontSize: 10, fontFamily: 'DM Mono, monospace' }}>{h(Number(pay.amount))}</p>
                       </>
                     ) : (
                       <p style={{ fontSize: 10 }}>Pendente</p>

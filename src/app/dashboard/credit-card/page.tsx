@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useTransactions } from '@/hooks/useTransactions'
 import { createClient }    from '@/services/supabase/client'
 import { CreditCard, Upload, Users } from 'lucide-react'
+import { useHideValues } from '@/hooks/useHideValues'
 
 const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 const fmt = (v: number) =>
@@ -30,6 +31,8 @@ export default function CreditCardPage() {
   const [month, setMonth]             = useState(getDefaultMonth())
   const [evolution, setEvolution]     = useState<{ month: string; total: number }[]>([])
   const [prevTotal, setPrevTotal]     = useState(0)
+  const { hidden }                    = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : fmt(v)
 
   const { transactions, loading } = useTransactions(HOUSEHOLD_ID, { month, type: 'EXPENSE' })
 
@@ -123,7 +126,7 @@ export default function CreditCardPage() {
               <CreditCard size={13} />
             </span>
           </div>
-          <p className="stat-value" style={{ color: 'var(--danger)' }}>{fmt(total)}</p>
+          <p className="stat-value" style={{ color: 'var(--danger)' }}>{h(total)}</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             {transactions.length} compras
           </p>
@@ -139,7 +142,7 @@ export default function CreditCardPage() {
             </span>
           </div>
           <p className="stat-value" style={{ color: prevTotal > 0 ? 'var(--text)' : 'var(--text-muted)' }}>
-            {prevTotal > 0 ? fmt(prevTotal) : 'R$ 0,00'}
+            {hidden ? '••••••' : prevTotal > 0 ? fmt(prevTotal) : 'R$ 0,00'}
           </p>
           <p style={{ fontSize: 11, marginTop: 6,
                       color: diffPct !== null ? (diff > 0 ? 'var(--danger)' : 'var(--success)') : 'var(--text-muted)' }}>
@@ -158,7 +161,7 @@ export default function CreditCardPage() {
             </span>
           </div>
           <p className="stat-value" style={{ color: 'var(--info)' }}>
-            {transactions.length > 0 ? fmt(total / transactions.length) : fmt(0)}
+            {hidden ? '••••••' : transactions.length > 0 ? fmt(total / transactions.length) : fmt(0)}
           </p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Por transação</p>
         </div>
@@ -201,7 +204,7 @@ export default function CreditCardPage() {
                         </span>
                         <span style={{ fontSize: 13, fontFamily: 'DM Mono, monospace',
                                        color: 'var(--text)', fontWeight: 500, whiteSpace: 'nowrap' }}>
-                          {fmt(cat.total)}
+                          {h(cat.total)}
                         </span>
                       </div>
                     </div>
@@ -235,7 +238,7 @@ export default function CreditCardPage() {
                     </div>
                     <span style={{ fontSize: 13, fontFamily: 'DM Mono, monospace',
                                    color: 'var(--text)', fontWeight: 500 }}>
-                      {fmt(m.total)}
+                      {h(m.total)}
                     </span>
                   </div>
                   <div className="progress-track" style={{ height: 5 }}>
@@ -273,7 +276,7 @@ export default function CreditCardPage() {
                     color: isSelected ? 'var(--brand)' : 'var(--text-muted)',
                     fontWeight: isSelected ? 700 : 400,
                   }}>
-                    {e.total > 0 ? fmt(e.total).replace('R$\u00a0', '') : '0,00'}
+                    {hidden ? '\u2022\u2022\u2022' : e.total > 0 ? fmt(e.total).replace('R$\u00a0', '') : '0,00'}
                   </span>
                   <div className="w-full flex items-end" style={{ flex: 1 }}>
                     <div className="w-full rounded-lg transition-all"
@@ -382,7 +385,7 @@ export default function CreditCardPage() {
                     <td style={{ padding: '11px 16px', textAlign: 'right',
                                  fontFamily: 'DM Mono, monospace', fontSize: 13,
                                  fontWeight: 600, color: 'var(--danger)', whiteSpace: 'nowrap' }}>
-                      {fmt(Number(tx.amount))}
+                      {h(Number(tx.amount))}
                     </td>
                   </tr>
                 ))}
@@ -396,7 +399,7 @@ export default function CreditCardPage() {
                   <td style={{ padding: '10px 16px', textAlign: 'right',
                                fontFamily: 'DM Mono, monospace', fontSize: 14,
                                fontWeight: 700, color: 'var(--danger)' }}>
-                    {fmt(total)}
+                    {h(total)}
                   </td>
                 </tr>
               </tfoot>

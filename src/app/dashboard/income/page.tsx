@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useHideValues } from '@/hooks/useHideValues'
 import { createClient }              from '@/services/supabase/client'
 import { useIncome, INCOME_CATEGORIES } from '@/hooks/useIncome'
 import { useAccounts }               from '@/hooks/useAccounts'
@@ -22,6 +23,8 @@ export default function IncomePage() {
   const [month, setMonth]         = useState(getDefaultMonth())
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState<any>(null)
+  const { hidden } = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : formatCurrency(v)
 
   const { entries, loading, total, byCategory, byMember, createEntry, updateEntry, deleteEntry } =
     useIncome(HOUSEHOLD_ID, month)
@@ -69,7 +72,7 @@ export default function IncomePage() {
         {/* Total */}
         <div className="stat-card" style={{ borderColor: 'var(--brand-border)' }}>
           <p className="stat-label">Total do mês</p>
-          <p className="stat-value" style={{ color: 'var(--brand)' }}>{formatCurrency(total)}</p>
+          <p className="stat-value" style={{ color: 'var(--brand)' }}>{h(total)}</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             {entries.length} {entries.length === 1 ? 'lançamento' : 'lançamentos'}
           </p>
@@ -87,7 +90,7 @@ export default function IncomePage() {
                   <div className="flex justify-between mb-1">
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{m.name}</span>
                     <span style={{ fontSize: 13, fontFamily: 'DM Mono, monospace', color: 'var(--text)' }}>
-                      {formatCurrency(m.total)}
+                      {h(m.total)}
                     </span>
                   </div>
                   <div className="progress-track">
@@ -115,7 +118,7 @@ export default function IncomePage() {
                 <span className="w-2 h-2 rounded-full" style={{ background: c.color }} />
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{c.label}</span>
                 <span style={{ fontSize: 13, fontFamily: 'DM Mono, monospace', color: c.color, fontWeight: 600 }}>
-                  {formatCurrency(c.total)}
+                  {h(c.total)}
                 </span>
               </div>
             ))}
@@ -196,7 +199,7 @@ export default function IncomePage() {
                       textAlign: 'right', fontFamily: 'DM Mono, monospace',
                       fontWeight: 600, fontSize: 13, color: 'var(--success)', whiteSpace: 'nowrap',
                     }}>
-                      +{formatCurrency(Number(entry.amount))}
+                      {hidden ? '••••••' : '+' + formatCurrency(Number(entry.amount))}
                     </td>
                     <td>
                       <div className="flex items-center justify-center gap-1">

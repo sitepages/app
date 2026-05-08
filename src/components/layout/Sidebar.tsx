@@ -8,8 +8,10 @@ import {
   Wallet, TrendingUp, ShoppingCart, Target,
   BarChart3, Settings, LogOut, CreditCard,
   TrendingDown, Home, Menu, X, Sun, Moon, Heart, BookOpen,
+  Eye, EyeOff,
 } from 'lucide-react'
 import { useTheme } from '@/hooks/useTheme'
+import { useHideValues } from '@/hooks/useHideValues'
 
 const NAV_GROUPS = [
   {
@@ -85,6 +87,7 @@ function NavLink({ href, label, icon: Icon, color, compact = false, onClick }: {
 
 function SidebarContent({ compact = false, onNav }: { compact?: boolean; onNav?: () => void }) {
   const { theme, toggle } = useTheme()
+  const { hidden, toggle: toggleHide } = useHideValues()
   const isLight = theme === 'light'
 
   return (
@@ -110,6 +113,21 @@ function SidebarContent({ compact = false, onNav }: { compact?: boolean; onNav?:
 
       <div className="px-3 pb-4 space-y-0.5"
         style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+
+        {/* Toggle de ocultar valores */}
+        <button onClick={toggleHide} className="nav-item w-full"
+          style={{ justifyContent: compact ? 'center' : undefined, padding: compact ? '9px 0' : undefined }}
+          title={hidden ? 'Mostrar valores' : 'Ocultar valores'}>
+          <span className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(168,85,247,0.12)', color: '#A855F7' }}>
+            {hidden ? <EyeOff size={13} /> : <Eye size={13} />}
+          </span>
+          {!compact && (
+            <span style={{ color: 'var(--text-secondary)' }}>
+              {hidden ? 'Mostrar valores' : 'Ocultar valores'}
+            </span>
+          )}
+        </button>
 
         {/* Toggle de tema */}
         <button onClick={toggle} className="nav-item w-full"
@@ -147,6 +165,7 @@ function SidebarContent({ compact = false, onNav }: { compact?: boolean; onNav?:
 export default function Sidebar({ userId }: { userId: string }) {
   const pathname = usePathname()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { hidden, toggle: toggleHide } = useHideValues()
   const drawerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { setDrawerOpen(false) }, [pathname])
@@ -226,10 +245,16 @@ export default function Sidebar({ userId }: { userId: string }) {
             Finança Casa
           </p>
         </div>
-        <button onClick={() => setDrawerOpen(true)} className="btn btn-ghost btn-sm"
-          style={{ padding: 8 }} aria-label="Abrir menu">
-          <Menu size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button onClick={toggleHide} className="btn btn-ghost btn-sm"
+            style={{ padding: 8 }} aria-label={hidden ? 'Mostrar valores' : 'Ocultar valores'}>
+            {hidden ? <EyeOff size={18} style={{ color: '#A855F7' }} /> : <Eye size={18} style={{ color: '#A855F7' }} />}
+          </button>
+          <button onClick={() => setDrawerOpen(true)} className="btn btn-ghost btn-sm"
+            style={{ padding: 8 }} aria-label="Abrir menu">
+            <Menu size={20} />
+          </button>
+        </div>
       </header>
 
       {/* Overlay do drawer */}

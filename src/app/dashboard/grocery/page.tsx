@@ -10,6 +10,7 @@ import { ShoppingListHeader } from '@/components/grocery/ShoppingListHeader'
 import { ShoppingListItemRow } from '@/components/grocery/ShoppingListItemRow'
 import { ShoppingListAddItem } from '@/components/grocery/ShoppingListAddItem'
 import { ShoppingListFinalizeButton } from '@/components/grocery/ShoppingListFinalizeButton'
+import { useHideValues } from '@/hooks/useHideValues'
 
 const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -35,6 +36,8 @@ export default function GroceryPage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [showNfceImport, setShowNfceImport]   = useState(false)
   const [nfceTargetSession, setNfceTargetSession] = useState<any>(null)
+  const { hidden }                              = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : fmt(v)
 
   const { sessions, products, loading, getMonthStats, fetchItems,
           createSession, addItem, deleteSession, deleteItem, refetch } = useGrocery(HOUSEHOLD_ID)
@@ -205,7 +208,7 @@ export default function GroceryPage() {
                   <ShoppingCart size={13} />
                 </span>
               </div>
-              <p className="stat-value" style={{ color: 'var(--danger)' }}>{fmt(stats.total)}</p>
+              <p className="stat-value" style={{ color: 'var(--danger)' }}>{h(stats.total)}</p>
               <p style={{ fontSize: 11, marginTop: 6,
                           color: diffPct !== null ? (diff > 0 ? 'var(--danger)' : 'var(--success)') : 'var(--text-muted)' }}>
                 {diffPct !== null
@@ -220,7 +223,7 @@ export default function GroceryPage() {
             </div>
             <div className="stat-card">
               <p className="stat-label">Ticket Médio</p>
-              <p className="stat-value" style={{ color: 'var(--warning)' }}>{fmt(stats.avg)}</p>
+              <p className="stat-value" style={{ color: 'var(--warning)' }}>{h(stats.avg)}</p>
               <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>por compra</p>
             </div>
           </div>
@@ -265,7 +268,7 @@ export default function GroceryPage() {
                         {session.store_name}
                       </p>
                       <span style={{ fontSize: 15, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: 'var(--danger)', flexShrink: 0 }}>
-                        {fmt(Number(session.total_amount))}
+                        {h(Number(session.total_amount))}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
@@ -336,11 +339,11 @@ export default function GroceryPage() {
                                 </td>
                                 <td style={{ padding: '8px 14px', textAlign: 'right', fontSize: 12,
                                              fontFamily: 'DM Mono, monospace', color: 'var(--text-secondary)' }}>
-                                  {fmt(Number(item.unit_price))}
+                                  {h(Number(item.unit_price))}
                                 </td>
                                 <td style={{ padding: '8px 14px', textAlign: 'right', fontSize: 13,
                                              fontFamily: 'DM Mono, monospace', fontWeight: 600, color: 'var(--danger)' }}>
-                                  {fmt(Number(item.total_price))}
+                                  {h(Number(item.total_price))}
                                 </td>
                                 <td style={{ padding: '8px 8px', width: 36 }}>
                                   <button onClick={() => deleteItem(item.id, session.id)}
@@ -358,7 +361,7 @@ export default function GroceryPage() {
                               </td>
                               <td style={{ padding: '8px 14px', textAlign: 'right',
                                            fontFamily: 'DM Mono, monospace', fontWeight: 700, color: 'var(--danger)', fontSize: 14 }}>
-                                {fmt(sessionItems.reduce((s, i) => s + Number(i.total_price), 0))}
+                                {h(sessionItems.reduce((s, i) => s + Number(i.total_price), 0))}
                               </td>
                               <td />
                             </tr>

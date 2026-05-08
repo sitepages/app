@@ -10,6 +10,7 @@ import {
   TrendingDown, TrendingUp, Wallet, Upload,
   ArrowRight, RefreshCw, Calendar, Lock,
 } from 'lucide-react'
+import { useHideValues } from '@/hooks/useHideValues'
 
 const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 
@@ -36,10 +37,14 @@ interface MonthData {
   variableTotal: number
 }
 
+const HIDDEN = '••••••'
+
 export default function DashboardClient({ displayName, greeting }: { displayName: string; greeting: string }) {
   const [month, setMonth]     = useState(getDefaultMonth())
   const [data, setData]       = useState<MonthData | null>(null)
   const [loading, setLoading] = useState(true)
+  const { hidden }            = useHideValues()
+  const h = (v: number) => hidden ? HIDDEN : fmt(v)
   const { summary }           = useAccounts(HOUSEHOLD_ID)
   const { budgets, exceeded, warning } = useBudgets(HOUSEHOLD_ID, month)
   const { data: costData }               = useCostOfLiving(HOUSEHOLD_ID, '3')
@@ -144,15 +149,15 @@ export default function DashboardClient({ displayName, greeting }: { displayName
       <section className="mb-7 animate-fade-up-1">
         <SectionLabel>Patrimônio</SectionLabel>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Disponível"  value={summary.disponivel} color="var(--success)" sub="Conta corrente" />
-          <StatCard label="Investido"   value={summary.investido}  color="var(--info)"    sub="Poupança + CDI + Invest." />
-          <StatCard label="Total"       value={summary.total}      color="var(--brand)"   sub="Patrimônio completo" highlight />
+          <StatCard label="Disponível"  value={summary.disponivel} color="var(--success)" sub="Conta corrente" hidden={hidden} />
+          <StatCard label="Investido"   value={summary.investido}  color="var(--info)"    sub="Poupança + CDI + Invest." hidden={hidden} />
+          <StatCard label="Total"       value={summary.total}      color="var(--brand)"   sub="Patrimônio completo" highlight hidden={hidden} />
           <div className="stat-card" style={{ borderColor: 'rgba(248,113,113,0.2)' }}>
             <div className="flex items-center justify-between mb-2">
               <p className="stat-label">Aprisionado</p>
               <Lock size={13} style={{ color: 'var(--danger)' }} />
             </div>
-            <p className="stat-value" style={{ color: 'var(--danger)' }}>{fmt(totalCommitted)}</p>
+            <p className="stat-value" style={{ color: 'var(--danger)' }}>{h(totalCommitted)}</p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
               {totalCommitted > 0 ? 'Em parcelas futuras' : 'Nenhuma parcela ativa'}
             </p>
@@ -173,10 +178,10 @@ export default function DashboardClient({ displayName, greeting }: { displayName
                   <TrendingUp size={13} />
                 </span>
               </div>
-              <p className="stat-value" style={{ color: 'var(--success)' }}>{fmt(data.totalIncome)}</p>
+              <p className="stat-value" style={{ color: 'var(--success)' }}>{h(data.totalIncome)}</p>
               <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
                 {data.incomeCount} lançamentos
-                {data.vaIncome > 0 && <span style={{ color: 'var(--warning)' }}> · VA: {fmt(data.vaIncome)}</span>}
+                {data.vaIncome > 0 && <span style={{ color: 'var(--warning)' }}> · VA: {h(data.vaIncome)}</span>}
               </p>
             </div>
             <div className="stat-card">
@@ -187,7 +192,7 @@ export default function DashboardClient({ displayName, greeting }: { displayName
                   <TrendingDown size={13} />
                 </span>
               </div>
-              <p className="stat-value" style={{ color: 'var(--danger)' }}>{fmt(data.totalExpenses)}</p>
+              <p className="stat-value" style={{ color: 'var(--danger)' }}>{h(data.totalExpenses)}</p>
               <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>{data.expenseCount} transações</p>
             </div>
             <div className="stat-card">
@@ -199,7 +204,7 @@ export default function DashboardClient({ displayName, greeting }: { displayName
                 </span>
               </div>
               <p className="stat-value" style={{ color: data.saldo >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                {data.saldo >= 0 ? '+' : '-'}{fmt(Math.abs(data.saldo))}
+                {hidden ? HIDDEN : `${data.saldo >= 0 ? '+' : '-'}${fmt(Math.abs(data.saldo))}`}
               </p>
               <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
                 {data.saldo >= 0 ? 'Sobrou no mês' : 'Déficit no mês'}
@@ -249,8 +254,8 @@ export default function DashboardClient({ displayName, greeting }: { displayName
                             <div className="progress-fill" style={{ width: `${Math.min(b.percent, 100)}%`, background: color }} />
                           </div>
                           <div className="flex justify-between mt-1">
-                            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>{fmt(b.spent)}</span>
-                            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>{fmt(Number(b.amount_limit))}</span>
+                            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>{h(b.spent)}</span>
+                            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>{h(Number(b.amount_limit))}</span>
                           </div>
                         </div>
                       )
@@ -282,7 +287,7 @@ export default function DashboardClient({ displayName, greeting }: { displayName
                           <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{cat.name}</span>
                         </div>
                         <span style={{ fontSize: 13, fontFamily: 'DM Mono, monospace', color: 'var(--text)', fontWeight: 500 }}>
-                          {fmt(cat.total)}
+                          {h(cat.total)}
                         </span>
                       </div>
                       <div className="progress-track">
@@ -320,7 +325,7 @@ export default function DashboardClient({ displayName, greeting }: { displayName
                           <div className="flex justify-between mb-1">
                             <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{m.name}</span>
                             <span style={{ fontSize: 13, fontFamily: 'DM Mono, monospace', color: 'var(--text)', fontWeight: 500 }}>
-                              {fmt(m.total)}
+                              {h(m.total)}
                             </span>
                           </div>
                           <div className="progress-track">
@@ -366,7 +371,7 @@ export default function DashboardClient({ displayName, greeting }: { displayName
                         <p style={{ fontSize: 20, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: item.color }}>
                           {Math.round((item.value / item.total) * 100)}%
                         </p>
-                        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{fmt(item.value)}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{h(item.value)}</p>
                       </div>
                     ))}
                   </div>
@@ -386,11 +391,11 @@ export default function DashboardClient({ displayName, greeting }: { displayName
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <p style={{ fontSize: 22, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: 'var(--brand)' }}>
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(costData.totalMonthly)}
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400, marginLeft: 4 }}>/mês</span>
+                        {h(costData.totalMonthly)}
+                        {!hidden && <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400, marginLeft: 4 }}>/mês</span>}
                       </p>
                       <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(costData.dailyAverage)}/dia · média 3 meses
+                        {h(costData.dailyAverage)}{!hidden && '/dia · média 3 meses'}
                       </p>
                     </div>
                     <a href="/dashboard/cost-of-living" style={{ fontSize: 12, color: 'var(--brand)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -402,8 +407,8 @@ export default function DashboardClient({ displayName, greeting }: { displayName
                     <div style={{ flex: 1, background: 'var(--warning)' }} />
                   </div>
                   <div className="flex justify-between">
-                    <span style={{ fontSize: 11, color: 'var(--danger)' }}>Fixo {costData.fixedPercent}% · {new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(costData.fixedTotal)}</span>
-                    <span style={{ fontSize: 11, color: 'var(--warning)' }}>Variável {costData.variablePercent}% · {new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(costData.variableTotal)}</span>
+                    <span style={{ fontSize: 11, color: 'var(--danger)' }}>Fixo {costData.fixedPercent}% · {h(costData.fixedTotal)}</span>
+                    <span style={{ fontSize: 11, color: 'var(--warning)' }}>Variável {costData.variablePercent}% · {h(costData.variableTotal)}</span>
                   </div>
                 </>
               )}
@@ -445,11 +450,11 @@ export default function DashboardClient({ displayName, greeting }: { displayName
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>{children}</p>
 }
-function StatCard({ label, value, color, sub, highlight }: { label: string; value: number; color: string; sub: string; highlight?: boolean }) {
+function StatCard({ label, value, color, sub, highlight, hidden }: { label: string; value: number; color: string; sub: string; highlight?: boolean; hidden: boolean }) {
   return (
     <div className="stat-card" style={highlight ? { borderColor: 'var(--brand-border)' } : {}}>
       <p className="stat-label">{label}</p>
-      <p className="stat-value" style={{ color }}>{fmt(value)}</p>
+      <p className="stat-value" style={{ color }}>{hidden ? HIDDEN : fmt(value)}</p>
       <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>{sub}</p>
     </div>
   )

@@ -4,6 +4,7 @@ import { useCostOfLiving, CostPeriod } from '@/hooks/useCostOfLiving'
 import { useFixedCosts }   from '@/hooks/useFixedCosts'
 import { useCategories }   from '@/hooks/useCategories'
 import { Plus, X, Pencil, Trash2, Home } from 'lucide-react'
+import { useHideValues } from '@/hooks/useHideValues'
 
 const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 const fmt = (v: number) =>
@@ -45,6 +46,8 @@ export default function CostOfLivingPage() {
   )
   const { costs, upsert, remove } = useFixedCosts(HOUSEHOLD_ID)
   const { categories }            = useCategories()
+  const { hidden }                = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : fmt(v)
   const [showForm, setShowForm]   = useState(false)
   const [editing, setEditing]     = useState<any>(null)
   const [formType, setFormType]   = useState<'FIXED' | 'VARIABLE'>('FIXED')
@@ -141,7 +144,7 @@ export default function CostOfLivingPage() {
             <p className="stat-label">
               {data.mode === 'month' ? 'Custo do Mês' : 'Custo Médio Mensal'}
             </p>
-            <p className="stat-value" style={{ color: 'var(--brand)' }}>{fmt(data.totalMonthly)}</p>
+            <p className="stat-value" style={{ color: 'var(--brand)' }}>{h(data.totalMonthly)}</p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
               {data.mode === 'month'
                 ? getFullMonthLabel(data.selectedMonth!)
@@ -150,7 +153,7 @@ export default function CostOfLivingPage() {
           </div>
           <div className="stat-card">
             <p className="stat-label">Custo Diário</p>
-            <p className="stat-value" style={{ color: 'var(--info)' }}>{fmt(data.dailyAverage)}</p>
+            <p className="stat-value" style={{ color: 'var(--info)' }}>{h(data.dailyAverage)}</p>
             <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>por dia</p>
           </div>
           <div className="stat-card">
@@ -213,7 +216,7 @@ export default function CostOfLivingPage() {
                       <td style={{ padding: '11px 16px', textAlign: 'right',
                                    fontFamily: 'DM Mono, monospace', fontWeight: 600,
                                    color: 'var(--danger)', fontSize: 13, whiteSpace: 'nowrap' }}>
-                        {fmt(Number(cost.amount))}
+                        {h(Number(cost.amount))}
                       </td>
                       <td style={{ padding: '11px 8px', width: 72 }}>
                         <div className="flex gap-1 justify-center">
@@ -236,7 +239,7 @@ export default function CostOfLivingPage() {
                     <td style={{ padding: '10px 16px', textAlign: 'right',
                                  fontFamily: 'DM Mono, monospace', fontWeight: 700,
                                  color: 'var(--danger)', fontSize: 15 }}>
-                      {fmt(fixedCosts.reduce((s, c) => s + Number(c.amount), 0))}
+                      {h(fixedCosts.reduce((s, c) => s + Number(c.amount), 0))}
                     </td>
                     <td />
                   </tr>
@@ -285,7 +288,7 @@ export default function CostOfLivingPage() {
                     <td style={{ padding: '11px 16px', textAlign: 'right',
                                  fontFamily: 'DM Mono, monospace', fontWeight: 600,
                                  color: 'var(--warning)', fontSize: 13, whiteSpace: 'nowrap' }}>
-                      {fmt(Number(cost.amount))}
+                      {h(Number(cost.amount))}
                     </td>
                     <td style={{ padding: '11px 8px', width: 72 }}>
                       <div className="flex gap-1 justify-center">
@@ -311,7 +314,7 @@ export default function CostOfLivingPage() {
                     <td style={{ padding: '10px 16px', textAlign: 'right',
                                  fontFamily: 'DM Mono, monospace', fontWeight: 700,
                                  color: 'var(--warning)', fontSize: 15 }}>
-                      {fmt(varCosts.reduce((s, c) => s + Number(c.amount), 0))}
+                      {h(varCosts.reduce((s, c) => s + Number(c.amount), 0))}
                     </td>
                     <td />
                   </tr>
@@ -344,7 +347,7 @@ export default function CostOfLivingPage() {
                         color:      isHighlighted ? 'var(--brand)' : 'var(--text-muted)',
                         fontWeight: isHighlighted ? 600 : 400,
                       }}>
-                        {fmt(m.total).replace('R$ ', '')}
+                        {hidden ? '•••' : fmt(m.total).replace('R ', '')}
                       </span>
                       <div className="w-full flex flex-col justify-end rounded-lg overflow-hidden"
                         style={{ height: 70, background: 'var(--bg-elevated)' }}>

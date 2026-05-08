@@ -4,6 +4,7 @@ import { createClient } from '@/services/supabase/client'
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
          ResponsiveContainer, Legend } from 'recharts'
 import { TrendingUp, TrendingDown, Calendar, DollarSign, BarChart2, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { useHideValues } from '@/hooks/useHideValues'
 
 const HOUSEHOLD_ID = process.env.NEXT_PUBLIC_HOUSEHOLD_ID!
 const fmt  = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
@@ -46,6 +47,8 @@ export default function AnalyticsPage() {
   const [loading, setLoading]       = useState(true)
   const [activeTab, setActiveTab]   = useState<'overview' | 'categories' | 'balance'>('overview')
   const supabase = createClient()
+  const { hidden } = useHideValues()
+  const h = (v: number) => hidden ? '••••••' : fmt(v)
 
   useEffect(() => {
     loadData()
@@ -196,21 +199,21 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-7 animate-fade-up-1">
         <div className="stat-card">
           <p className="stat-label">Receita total</p>
-          <p className="stat-value" style={{ color: 'var(--success)' }}>{fmt(totalIncome)}</p>
+          <p className="stat-value" style={{ color: 'var(--success)' }}>{h(totalIncome)}</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             últimos {period} meses
           </p>
         </div>
         <div className="stat-card">
           <p className="stat-label">Gastos totais</p>
-          <p className="stat-value" style={{ color: 'var(--danger)' }}>{fmt(totalExpenses)}</p>
+          <p className="stat-value" style={{ color: 'var(--danger)' }}>{h(totalExpenses)}</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             últimos {period} meses
           </p>
         </div>
         <div className="stat-card">
           <p className="stat-label">Custo de vida médio</p>
-          <p className="stat-value" style={{ color: 'var(--warning)' }}>{fmt(avgMonthly)}</p>
+          <p className="stat-value" style={{ color: 'var(--warning)' }}>{h(avgMonthly)}</p>
           <div className="flex items-center gap-1 mt-1">
             {expenseDiffPct !== 0 && (
               <>
@@ -227,7 +230,7 @@ export default function AnalyticsPage() {
         </div>
         <div className="stat-card">
           <p className="stat-label">Gasto diário médio</p>
-          <p className="stat-value" style={{ color: 'var(--info)' }}>{fmt(dailyAvg)}</p>
+          <p className="stat-value" style={{ color: 'var(--info)' }}>{h(dailyAvg)}</p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
             mês atual / {daysInMonth} dias
           </p>
@@ -298,7 +301,7 @@ export default function AnalyticsPage() {
                   <div key={i} className="rounded-xl p-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
                     <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{item.label}</p>
                     <p style={{ fontSize: 18, fontFamily: 'DM Mono, monospace', fontWeight: 700, color: item.color }}>
-                      {fmt(item.value)}
+                      {hidden ? '••••••' : fmt(item.value)}
                     </p>
                   </div>
                 ))}
@@ -388,12 +391,12 @@ export default function AnalyticsPage() {
                         {displayed.map(m => (
                           <td key={m.month} style={{ padding: '8px', textAlign: 'right', fontSize: 12,
                             fontFamily: 'DM Mono, monospace', color: 'var(--text-secondary)' }}>
-                            {c.months[m.month] ? fmtK(c.months[m.month]) : '—'}
+                            {c.months[m.month] ? (hidden ? '•••' : fmtK(c.months[m.month])) : '—'}
                           </td>
                         ))}
                         <td style={{ padding: '8px 16px', textAlign: 'right', fontSize: 13,
                           fontFamily: 'DM Mono, monospace', fontWeight: 700, color: 'var(--danger)' }}>
-                          {fmt(total)}
+                          {h(total)}
                         </td>
                       </tr>
                     )
@@ -456,21 +459,21 @@ export default function AnalyticsPage() {
                     </td>
                     <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13,
                       fontFamily: 'DM Mono, monospace', color: 'var(--success)' }}>
-                      {fmt(m.income)}
+                      {h(m.income)}
                     </td>
                     <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13,
                       fontFamily: 'DM Mono, monospace', color: 'var(--danger)' }}>
-                      {fmt(m.expenses)}
+                      {h(m.expenses)}
                     </td>
                     <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13,
                       fontFamily: 'DM Mono, monospace', fontWeight: 600,
                       color: m.balance >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                      {fmt(m.balance)}
+                      {h(m.balance)}
                     </td>
                     <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: 13,
                       fontFamily: 'DM Mono, monospace', fontWeight: 700,
                       color: m.cumBalance >= 0 ? 'var(--brand)' : 'var(--danger)' }}>
-                      {fmt(m.cumBalance)}
+                      {h(m.cumBalance)}
                     </td>
                   </tr>
                 ))}
